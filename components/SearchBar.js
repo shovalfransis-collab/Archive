@@ -41,16 +41,16 @@ export default function SearchBar() {
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query && setOpen(true)}
         placeholder="Search everything…"
-        className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm"
+        className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
       />
       {open && results.length > 0 && (
-        <div className="absolute z-30 mt-1 max-h-80 w-full overflow-y-auto rounded border border-neutral-200 bg-white shadow-lg">
+        <div className="absolute z-30 mt-1 max-h-80 w-full overflow-y-auto rounded border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
           {results.map((r) => (
             <a
               key={r.id}
               href={`/folder/${r.folder_id}`}
               onClick={() => setOpen(false)}
-              className="block border-b border-neutral-100 px-3 py-2 text-sm last:border-0 hover:bg-neutral-50"
+              className="block border-b border-neutral-100 px-3 py-2 text-sm last:border-0 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700"
             >
               <div className="truncate font-medium">{r.title || r.url || '(untitled note)'}</div>
               <div className="text-xs capitalize text-neutral-400">{r.type}</div>
@@ -59,7 +59,7 @@ export default function SearchBar() {
         </div>
       )}
       {open && query.trim() && results.length === 0 && (
-        <div className="absolute z-30 mt-1 w-full rounded border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-400 shadow-lg">
+        <div className="absolute z-30 mt-1 w-full rounded border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-400 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
           No results
         </div>
       )}

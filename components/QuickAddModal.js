@@ -24,6 +24,9 @@ export default function QuickAddModal({ currentFolderId }) {
   const [url, setUrl] = useState('');
   const [noteText, setNoteText] = useState('');
   const [file, setFile] = useState(null);
+  // A free-text annotation you can attach on top of a link or photo (e.g.
+  // "watch this before the meeting") — separate from a note item's own body.
+  const [annotation, setAnnotation] = useState('');
 
   const router = useRouter();
 
@@ -42,6 +45,7 @@ export default function QuickAddModal({ currentFolderId }) {
     setUrl('');
     setNoteText('');
     setFile(null);
+    setAnnotation('');
   }
 
   async function handleSubmit(e) {
@@ -73,6 +77,7 @@ export default function QuickAddModal({ currentFolderId }) {
             title: preview.title || url,
             description: preview.description,
             faviconUrl: preview.faviconUrl,
+            note: annotation || null,
           }),
         });
       } else if (type === 'note') {
@@ -99,6 +104,7 @@ export default function QuickAddModal({ currentFolderId }) {
             type: 'photo',
             imageUrl,
             title: file.name,
+            note: annotation || null,
           }),
         });
       }
@@ -128,7 +134,7 @@ export default function QuickAddModal({ currentFolderId }) {
           onClick={closeAndReset}
         >
           <div
-            className="my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg"
+            className="my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg dark:bg-neutral-800"
             onClick={(e) => e.stopPropagation()}
           >
             {!type ? (
@@ -138,7 +144,7 @@ export default function QuickAddModal({ currentFolderId }) {
                   <button
                     key={t.key}
                     onClick={() => setType(t.key)}
-                    className="block w-full rounded border border-neutral-200 px-3 py-2 text-left hover:bg-neutral-50"
+                    className="block w-full rounded border border-neutral-200 px-3 py-2 text-left hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700"
                   >
                     {t.label}
                   </button>
@@ -154,7 +160,7 @@ export default function QuickAddModal({ currentFolderId }) {
                     required
                     value={folderId}
                     onChange={(e) => setFolderId(e.target.value)}
-                    className="mt-1 w-full rounded border border-neutral-300 px-2 py-1"
+                    className="mt-1 w-full rounded border border-neutral-300 px-2 py-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
                   >
                     <option value="" disabled>
                       Choose a folder…
@@ -176,7 +182,7 @@ export default function QuickAddModal({ currentFolderId }) {
                     placeholder="https://example.com"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    className="w-full rounded border border-neutral-300 px-2 py-1"
+                    className="w-full rounded border border-neutral-300 px-2 py-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
                   />
                 )}
                 {type === 'note' && (
@@ -187,7 +193,7 @@ export default function QuickAddModal({ currentFolderId }) {
                     placeholder="Type a note… (Markdown supported)"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    className="w-full rounded border border-neutral-300 px-2 py-1"
+                    className="w-full rounded border border-neutral-300 px-2 py-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
                   />
                 )}
                 {type === 'photo' && (
@@ -199,14 +205,31 @@ export default function QuickAddModal({ currentFolderId }) {
                   />
                 )}
 
+                {type !== 'note' && (
+                  <label className="block text-sm">
+                    Note <span className="text-neutral-400">(optional)</span>
+                    <textarea
+                      rows={2}
+                      placeholder="Add a note about this…"
+                      value={annotation}
+                      onChange={(e) => setAnnotation(e.target.value)}
+                      className="mt-1 w-full rounded border border-neutral-300 px-2 py-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+                    />
+                  </label>
+                )}
+
                 <div className="flex justify-end gap-2">
-                  <button type="button" onClick={closeAndReset} className="px-3 py-1 text-neutral-600">
+                  <button
+                    type="button"
+                    onClick={closeAndReset}
+                    className="px-3 py-1 text-neutral-600 dark:text-neutral-400"
+                  >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded bg-neutral-900 px-3 py-1 text-white disabled:opacity-50"
+                    className="rounded bg-neutral-900 px-3 py-1 text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
                   >
                     {saving ? 'Saving…' : 'Save'}
                   </button>

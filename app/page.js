@@ -22,7 +22,7 @@ export default async function HomePage() {
       </div>
 
       {folders.length === 0 ? (
-        <p className="text-neutral-500">No folders yet — create one to get started.</p>
+        <p className="text-neutral-500 dark:text-neutral-400">No folders yet — create one to get started.</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {folders.map((folder) => (

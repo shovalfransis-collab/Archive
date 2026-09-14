@@ -43,7 +43,7 @@ export default async function FolderPage({ params }) {
       )}
 
       {items.length === 0 && subfolders.length === 0 ? (
-        <p className="text-neutral-500">This folder is empty.</p>
+        <p className="text-neutral-500 dark:text-neutral-400">This folder is empty.</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {items.map((item) => (

@@ -42,13 +42,13 @@ export default function LoginPage() {
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           placeholder="Enter PIN"
-          className="w-full rounded border border-neutral-300 px-3 py-2 text-center text-lg tracking-widest"
+          className="w-full rounded border border-neutral-300 px-3 py-2 text-center text-lg tracking-widest dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded bg-neutral-900 py-2 text-white disabled:opacity-50"
+          className="w-full rounded bg-neutral-900 py-2 text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
         >
           {submitting ? 'Checking…' : 'Unlock'}
         </button>

@@ -26,19 +26,19 @@ export default function MoveToFolderModal({ item, allFolders, onClose }) {
       onClick={onClose}
     >
       <div
-        className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg"
+        className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg dark:bg-neutral-800"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-2 font-semibold">Move to…</h2>
         <div className="space-y-1">
           {flatFolders.length === 0 && (
-            <p className="text-sm text-neutral-500">No folders yet.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">No folders yet.</p>
           )}
           {flatFolders.map((f) => (
             <button
               key={f.id}
               onClick={() => handleMove(f.id)}
-              className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-neutral-50"
+              className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700"
               style={{ paddingLeft: `${8 + f.depth * 16}px` }}
             >
               📁 {f.name}

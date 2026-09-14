@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import SearchBar from './SearchBar';
 import QuickAddModal from './QuickAddModal';
+import ThemeToggle from './ThemeToggle';
 
 // Wraps every page with the header bar (logo, search, quick-add, logout) —
 // except the login page, which should be a blank slate. This has to be a
@@ -29,7 +30,7 @@ export default function AppShell({ children }) {
 
   return (
     <div>
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
         <a href="/" className="shrink-0 text-lg font-semibold">
           🗄️ The Archive
         </a>
@@ -37,9 +38,10 @@ export default function AppShell({ children }) {
           <SearchBar />
         </div>
         <QuickAddModal currentFolderId={currentFolderId} />
+        <ThemeToggle />
         <button
           onClick={handleLogout}
-          className="shrink-0 text-sm text-neutral-500 hover:text-neutral-900"
+          className="shrink-0 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
         >
           Log out
         </button>

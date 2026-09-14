@@ -35,10 +35,17 @@ async function main() {
       description TEXT,
       image_url TEXT,
       content TEXT,
+      note TEXT,
       created_at TIMESTAMPTZ DEFAULT now(),
       updated_at TIMESTAMPTZ DEFAULT now()
     );
   `;
+
+  // Added after the initial release — a free-text annotation you can attach
+  // to any item (link, photo, or note) regardless of its main content, e.g.
+  // "watch this before the meeting". IF NOT EXISTS keeps this script safe
+  // to re-run against a database that already has the column.
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS note TEXT;`;
 
   await sql`CREATE INDEX IF NOT EXISTS items_folder_id_idx ON items(folder_id);`;
   await sql`CREATE INDEX IF NOT EXISTS folders_parent_id_idx ON folders(parent_id);`;

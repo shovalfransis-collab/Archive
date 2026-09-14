@@ -11,7 +11,7 @@ export default function Breadcrumbs({ folder, allFolders }) {
   }
 
   return (
-    <nav className="flex flex-wrap gap-1 text-sm text-neutral-500">
+    <nav className="flex flex-wrap gap-1 text-sm text-neutral-500 dark:text-neutral-400">
       <a href="/" className="hover:underline">
         Home
       </a>

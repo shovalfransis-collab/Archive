@@ -29,7 +29,7 @@ export default function NewFolderButton({ parentId }) {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50"
+        className="rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
       >
         + New folder
       </button>
@@ -44,9 +44,12 @@ export default function NewFolderButton({ parentId }) {
         onChange={(e) => setName(e.target.value)}
         onBlur={() => !name && setAdding(false)}
         placeholder="Folder name"
-        className="rounded border border-neutral-300 px-2 py-1 text-sm"
+        className="rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
       />
-      <button type="submit" className="rounded bg-neutral-900 px-2 py-1 text-sm text-white">
+      <button
+        type="submit"
+        className="rounded bg-neutral-900 px-2 py-1 text-sm text-white dark:bg-neutral-100 dark:text-neutral-900"
+      >
         Add
       </button>
     </form>

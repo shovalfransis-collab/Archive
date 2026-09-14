@@ -41,7 +41,7 @@ export default function NoteViewModal({ item, onClose }) {
       onClick={onClose}
     >
       <div
-        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-4 shadow-lg"
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-4 shadow-lg dark:bg-neutral-800"
         onClick={(e) => e.stopPropagation()}
       >
         {editing ? (
@@ -50,14 +50,14 @@ export default function NoteViewModal({ item, onClose }) {
               <button
                 type="button"
                 onClick={() => wrapSelection('**', '**')}
-                className="rounded border px-2 py-1 text-sm font-bold"
+                className="rounded border px-2 py-1 text-sm font-bold dark:border-neutral-600"
               >
                 B
               </button>
               <button
                 type="button"
                 onClick={() => wrapSelection('\n- ')}
-                className="rounded border px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm dark:border-neutral-600"
               >
                 List
               </button>
@@ -67,16 +67,19 @@ export default function NoteViewModal({ item, onClose }) {
               rows={10}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+              className="w-full rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditing(false)} className="px-3 py-1 text-sm text-neutral-600">
+              <button
+                onClick={() => setEditing(false)}
+                className="px-3 py-1 text-sm text-neutral-600 dark:text-neutral-400"
+              >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded bg-neutral-900 px-3 py-1 text-sm text-white disabled:opacity-50"
+                className="rounded bg-neutral-900 px-3 py-1 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>
@@ -89,10 +92,16 @@ export default function NoteViewModal({ item, onClose }) {
               dangerouslySetInnerHTML={{ __html: renderMarkdown(item.content) }}
             />
             <div className="flex justify-end gap-2">
-              <button onClick={onClose} className="px-3 py-1 text-sm text-neutral-600">
+              <button
+                onClick={onClose}
+                className="px-3 py-1 text-sm text-neutral-600 dark:text-neutral-400"
+              >
                 Close
               </button>
-              <button onClick={() => setEditing(true)} className="rounded border px-3 py-1 text-sm">
+              <button
+                onClick={() => setEditing(true)}
+                className="rounded border px-3 py-1 text-sm dark:border-neutral-600"
+              >
                 Edit
               </button>
             </div>

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind v4 has no config file — this is how you tell it to key the
+   `dark:` variant off a `.dark` class (toggled by ThemeToggle.js) instead
+   of only `prefers-color-scheme`, so a manual choice can override the OS
+   setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Small helper: truncate note/description previews to a few lines instead
    of letting long text blow out a card's height. */
 .line-clamp-2 {

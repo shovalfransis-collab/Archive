@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
-import { updateItemTitle, updateNoteContent, moveItem, deleteItem } from '@/lib/db';
+import {
+  updateItemTitle,
+  updateNoteContent,
+  updateItemNote,
+  moveItem,
+  deleteItem,
+} from '@/lib/db';
 
-// Handles renaming (body: { title }), editing note text (body: { content }),
-// and moving an item to a different folder (body: { folderId }) — whichever
-// field is present in the request body.
+// Handles renaming (body: { title }), editing a note item's body
+// (body: { content }), editing the annotation attached to any item
+// (body: { note }), and moving an item to a different folder
+// (body: { folderId }) — whichever field is present in the request body.
 export async function PATCH(request, { params }) {
   const { id: idParam } = await params; // route params are a Promise in current Next.js
   const id = Number(idParam);
@@ -15,6 +22,9 @@ export async function PATCH(request, { params }) {
   }
   if (body.content !== undefined) {
     item = await updateNoteContent(id, body.content);
+  }
+  if (body.note !== undefined) {
+    item = await updateItemNote(id, body.note);
   }
   if (body.folderId !== undefined) {
     item = await moveItem(id, body.folderId);
