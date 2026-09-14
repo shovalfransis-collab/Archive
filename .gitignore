@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Local environment variables (these contain secrets — never commit them)
+.env
+.env*.local
+
+# Editor/OS clutter
+.DS_Store
+*.log
