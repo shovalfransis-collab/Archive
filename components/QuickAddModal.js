@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { flattenWithDepth } from '@/lib/folderTree';
 
@@ -121,13 +122,13 @@ export default function QuickAddModal({ currentFolderId }) {
         +
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
           onClick={closeAndReset}
         >
           <div
-            className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg"
+            className="my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             {!type ? (
@@ -213,7 +214,8 @@ export default function QuickAddModal({ currentFolderId }) {
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
