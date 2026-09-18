@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { renameFolder, moveFolder, deleteFolder } from '@/lib/db';
+import { renameFolder, moveFolder, updateFolderIcon, deleteFolder } from '@/lib/db';
 
-// Handles both renaming (body: { name }) and moving (body: { parentId })
-// a folder — whichever field is present in the request body.
+// Handles renaming (body: { name }), moving (body: { parentId }), and
+// changing the icon (body: { icon }) — whichever fields are present in the
+// request body.
 export async function PATCH(request, { params }) {
   const { id: idParam } = await params; // route params are a Promise in current Next.js
   const id = Number(idParam);
@@ -14,6 +15,9 @@ export async function PATCH(request, { params }) {
   }
   if (body.parentId !== undefined) {
     folder = await moveFolder(id, body.parentId);
+  }
+  if (body.icon !== undefined) {
+    folder = await updateFolderIcon(id, body.icon);
   }
 
   return NextResponse.json(folder);

@@ -10,12 +10,12 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { name, parentId } = await request.json();
+  const { name, parentId, icon } = await request.json();
 
   if (!name || !name.trim()) {
     return NextResponse.json({ error: 'Folder name is required' }, { status: 400 });
   }
 
-  const folder = await createFolder(name.trim(), parentId ?? null);
+  const folder = await createFolder(name.trim(), parentId ?? null, icon ?? null);
   return NextResponse.json(folder);
 }

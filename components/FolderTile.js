@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// A small palette of common folder emoji, plus the input below lets you
+// type/paste any other emoji.
+const ICON_CHOICES = ['📁', '⭐', '📌', '💼', '🎬', '🎵', '📚', '🖼️', '🍳', '✈️', '💡', '🎮'];
+
 // A single folder tile on the desktop/folder view, with a hover menu for
-// rename/delete.
+// rename/delete/change icon.
 export default function FolderTile({ folder }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [pickingIcon, setPickingIcon] = useState(false);
   const [name, setName] = useState(folder.name);
+  const [customIcon, setCustomIcon] = useState('');
   const router = useRouter();
 
   async function handleRename(e) {
@@ -20,6 +26,18 @@ export default function FolderTile({ folder }) {
     });
     setRenaming(false);
     setMenuOpen(false);
+    router.refresh();
+  }
+
+  async function handleIconChange(icon) {
+    await fetch(`/api/folders/${folder.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ icon }),
+    });
+    setPickingIcon(false);
+    setMenuOpen(false);
+    setCustomIcon('');
     router.refresh();
   }
 
@@ -60,13 +78,60 @@ export default function FolderTile({ folder }) {
     );
   }
 
+  if (pickingIcon) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <div className="grid grid-cols-4 gap-1">
+          {ICON_CHOICES.map((icon) => (
+            <button
+              key={icon}
+              type="button"
+              onClick={() => handleIconChange(icon)}
+              className="rounded p-1 text-xl hover:bg-neutral-100 dark:hover:bg-neutral-700"
+              aria-label={`Use ${icon} icon`}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (customIcon.trim()) handleIconChange(customIcon.trim());
+          }}
+          className="flex w-full gap-1"
+        >
+          <input
+            value={customIcon}
+            onChange={(e) => setCustomIcon(e.target.value)}
+            placeholder="Or type an emoji"
+            className="w-full rounded border border-neutral-300 px-1 text-center text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          />
+          <button
+            type="submit"
+            className="rounded bg-neutral-900 px-2 py-0.5 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            Set
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => setPickingIcon(false)}
+          className="rounded border px-2 py-0.5 text-xs dark:border-neutral-700"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="group relative">
       <a
         href={`/folder/${folder.id}`}
         className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200 p-3 text-center hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
       >
-        <span className="text-4xl">📁</span>
+        <span className="text-4xl">{folder.icon || '📁'}</span>
         <span className="w-full break-words text-sm">{folder.name}</span>
       </a>
       <button
@@ -86,6 +151,12 @@ export default function FolderTile({ folder }) {
             className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
           >
             Rename
+          </button>
+          <button
+            onClick={() => setPickingIcon(true)}
+            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+          >
+            Change icon
           </button>
           <button
             onClick={handleDelete}

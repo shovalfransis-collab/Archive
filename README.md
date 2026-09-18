@@ -19,6 +19,7 @@ app/                     — every page and API route (Next.js "App Router")
 components/              — reusable pieces of UI (folder tiles, item cards, the quick-add "+" button, ...)
 lib/db.js                — every database query, in one file
 lib/auth.js              — the PIN-gate logic
+lib/ai.js                — the OpenRouter auto-sort agent (folder + tags + summary)
 scripts/init-db.js       — a one-time script that creates the database tables
 proxy.js                 — checks you're logged in before every page loads
 ```
@@ -152,6 +153,25 @@ keeps your data safely between deploys.
      characters). This is used to cryptographically sign your login
      session so no one can fake being logged in without knowing your PIN.
 3. Click **Save** for each.
+
+### Step 6.5 — Set up the AI auto-sort agent (optional)
+
+When you save a link or photo without picking a folder yourself, the app
+asks an AI model — via **OpenRouter** (openrouter.ai), a single API that
+gives you access to many different AI models with one key — to decide
+which folder it belongs in (creating a new one if nothing fits), and to
+write a short summary and a few tags for it.
+
+1. Go to [openrouter.ai](https://openrouter.ai) and sign up.
+2. Go to [openrouter.ai/keys](https://openrouter.ai/keys) and create a new
+   key. Add a small amount of credit (a few dollars goes a very long way
+   with the cheap model this app uses by default).
+3. Back in your Vercel project's **Settings → Environment Variables**, add:
+   - `OPENROUTER_API_KEY` — the key you just created.
+4. Click **Save**.
+
+This step is optional — if you skip it, "Let AI sort it" just files things
+into an "Unsorted" folder instead of failing.
 
 ### Step 7 — Create the database tables
 

@@ -9,17 +9,28 @@ const TYPES = [
   { key: 'link', label: '🔗 Add link' },
   { key: 'photo', label: '🖼️ Add photo' },
   { key: 'note', label: '📝 Add note' },
+  { key: 'file', label: '📎 Add a file' },
 ];
+
+// Sentinel value for the folder <select> meaning "don't make me choose —
+// let the AI agent (see lib/ai.js) decide where this belongs." Links and
+// photos default to this; notes still ask you to pick, since a note is
+// usually written with a specific folder already in mind.
+const AUTO_SORT = '__auto__';
 
 // The "+" button in the header — lets you add a link, photo, or note from
 // anywhere in the app without navigating into a folder first. Defaults to
-// the folder you're currently viewing (if any); otherwise you pick one.
+// the folder you're currently viewing (if any); otherwise, for links/photos,
+// defaults to letting the AI auto-sort agent pick a folder for you.
 export default function QuickAddModal({ currentFolderId }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(null);
   const [folders, setFolders] = useState([]);
   const [folderId, setFolderId] = useState('');
   const [saving, setSaving] = useState(false);
+  // Brief "Filed in X" notification shown after an auto-sorted save.
+  // { folderName, folderIsNew } while visible, otherwise null.
+  const [toast, setToast] = useState(null);
 
   const [url, setUrl] = useState('');
   const [noteText, setNoteText] = useState('');
@@ -35,9 +46,25 @@ export default function QuickAddModal({ currentFolderId }) {
       fetch('/api/folders')
         .then((res) => res.json())
         .then(setFolders);
+      // Inside a folder already: default to it. Otherwise default to
+      // auto-sort for links/photos, and to "choose one" for notes (set
+      // once `type` is picked, below).
       setFolderId(currentFolderId ?? '');
     }
   }, [open, currentFolderId]);
+
+  // Once you pick a type, set a sensible default for the folder field if
+  // one hasn't already been set from currentFolderId above.
+  useEffect(() => {
+    if (!type || currentFolderId) return;
+    setFolderId(type === 'note' ? '' : AUTO_SORT);
+  }, [type, currentFolderId]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   function closeAndReset() {
     setOpen(false);
@@ -48,9 +75,24 @@ export default function QuickAddModal({ currentFolderId }) {
     setAnnotation('');
   }
 
+  // Posts to /api/items and, if the server auto-sorted it (no folderId was
+  // sent), surfaces a short toast naming where it landed.
+  async function saveItem(body) {
+    const res = await fetch('/api/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const saved = await res.json();
+    if (saved.autoSorted) {
+      setToast({ folderName: saved.folderName, folderIsNew: saved.folderIsNew });
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!folderId) return;
+    const isAutoSort = folderId === AUTO_SORT;
+    if (!folderId || (!isAutoSort && !folderId)) return;
 
     setSaving(true);
     try {
@@ -67,52 +109,63 @@ export default function QuickAddModal({ currentFolderId }) {
         } catch {
           // ignore — fall back to the bare URL below
         }
-        await fetch('/api/items', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            folderId: Number(folderId),
-            type: 'link',
-            url,
-            title: preview.title || url,
-            description: preview.description,
-            faviconUrl: preview.faviconUrl,
-            note: annotation || null,
-          }),
+        await saveItem({
+          folderId: isAutoSort ? null : Number(folderId),
+          type: 'link',
+          url,
+          title: preview.title || url,
+          description: preview.description,
+          faviconUrl: preview.faviconUrl,
+          note: annotation || null,
         });
       } else if (type === 'note') {
-        await fetch('/api/items', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            folderId: Number(folderId),
-            type: 'note',
-            content: noteText,
-            title: noteText.slice(0, 40),
-          }),
+        await saveItem({
+          folderId: Number(folderId),
+          type: 'note',
+          content: noteText,
+          title: noteText.slice(0, 40),
         });
       } else if (type === 'photo' && file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-        const { url: imageUrl } = await uploadRes.json();
-        await fetch('/api/items', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            folderId: Number(folderId),
-            type: 'photo',
-            imageUrl,
-            title: file.name,
-            note: annotation || null,
-          }),
+        const { url: imageUrl } = await uploadFile(file);
+        await saveItem({
+          folderId: isAutoSort ? null : Number(folderId),
+          type: 'photo',
+          imageUrl,
+          title: file.name,
+          note: annotation || null,
+        });
+      } else if (type === 'file' && file) {
+        // Files reuse the same generic imageUrl column as photos — it's just
+        // a URL to whatever got uploaded, not an image-specific field.
+        const { url: fileUrl } = await uploadFile(file);
+        await saveItem({
+          folderId: isAutoSort ? null : Number(folderId),
+          type: 'file',
+          imageUrl: fileUrl,
+          title: file.name,
+          note: annotation || null,
         });
       }
       closeAndReset();
       router.refresh();
+    } catch (err) {
+      alert(`Couldn't save that: ${err.message}`);
     } finally {
       setSaving(false);
     }
+  }
+
+  // Uploads to /api/upload and throws a readable error instead of crashing
+  // on `.json()` if the server errored (e.g. missing Blob credentials).
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(body?.error || `Upload failed (${res.status})`);
+    }
+    return body;
   }
 
   const flatFolders = flattenWithDepth(folders);
@@ -165,6 +218,9 @@ export default function QuickAddModal({ currentFolderId }) {
                     <option value="" disabled>
                       Choose a folder…
                     </option>
+                    {type !== 'note' && (
+                      <option value={AUTO_SORT}>✨ Let AI sort it</option>
+                    )}
                     {flatFolders.map((f) => (
                       <option key={f.id} value={f.id}>
                         {'— '.repeat(f.depth)}
@@ -204,6 +260,13 @@ export default function QuickAddModal({ currentFolderId }) {
                     onChange={(e) => setFile(e.target.files[0])}
                   />
                 )}
+                {type === 'file' && (
+                  <input
+                    type="file"
+                    required
+                    onChange={(e) => setFile(e.target.files[0])}
+                  />
+                )}
 
                 {type !== 'note' && (
                   <label className="block text-sm">
@@ -237,6 +300,14 @@ export default function QuickAddModal({ currentFolderId }) {
               </form>
             )}
           </div>
+        </div>,
+        document.body
+      )}
+
+      {toast && createPortal(
+        <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full bg-neutral-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-neutral-100 dark:text-neutral-900">
+          ✨ Filed in <strong>{toast.folderName}</strong>
+          {toast.folderIsNew ? ' (new folder)' : ''}
         </div>,
         document.body
       )}

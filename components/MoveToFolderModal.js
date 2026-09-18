@@ -41,7 +41,7 @@ export default function MoveToFolderModal({ item, allFolders, onClose }) {
               className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700"
               style={{ paddingLeft: `${8 + f.depth * 16}px` }}
             >
-              📁 {f.name}
+              {f.icon || '📁'} {f.name}
             </button>
           ))}
         </div>

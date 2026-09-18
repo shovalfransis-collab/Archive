@@ -6,6 +6,31 @@ import MoveToFolderModal from './MoveToFolderModal';
 import NoteViewModal from './NoteViewModal';
 import ItemNoteModal from './ItemNoteModal';
 
+// Shown under any item type when the AI auto-sort agent (lib/ai.js) tagged
+// it with a summary and/or tags. Absent for manually-filed items.
+function AiMetadata({ item }) {
+  if (!item.summary && !(item.tags && item.tags.length)) return null;
+  return (
+    <div className="px-3 pb-2">
+      {item.summary && (
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">🤖 {item.summary}</p>
+      )}
+      {item.tags && item.tags.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {item.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Renders one saved item — a link, photo, or note — with a preview
 // appropriate to its type, plus a hover menu for move/delete.
 export default function ItemCard({ item, allFolders }) {
@@ -77,6 +102,7 @@ export default function ItemCard({ item, allFolders }) {
               📝 {item.note}
             </p>
           )}
+          <AiMetadata item={item} />
         </>
       )}
 
@@ -101,12 +127,29 @@ export default function ItemCard({ item, allFolders }) {
           )}
         </a>
       )}
+      {item.type === 'link' && <AiMetadata item={item} />}
 
       {item.type === 'note' && (
         <button onClick={() => setViewingNote(true)} className="block w-full p-3 text-left">
           <p className="line-clamp-6 whitespace-pre-wrap text-sm">{item.content}</p>
         </button>
       )}
+      {item.type === 'note' && <AiMetadata item={item} />}
+
+      {item.type === 'file' && (
+        <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="block p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl leading-none">📎</span>
+            <span className="truncate text-sm font-medium">{item.title || 'File'}</span>
+          </div>
+          {item.note && (
+            <p className="mt-1 line-clamp-2 text-xs italic text-neutral-600 dark:text-neutral-400">
+              📝 {item.note}
+            </p>
+          )}
+        </a>
+      )}
+      {item.type === 'file' && <AiMetadata item={item} />}
 
       {moving && (
         <MoveToFolderModal item={item} allFolders={allFolders} onClose={() => setMoving(false)} />

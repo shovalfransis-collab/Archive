@@ -47,6 +47,17 @@ async function main() {
   // to re-run against a database that already has the column.
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS note TEXT;`;
 
+  // Lets a folder show a custom emoji instead of the default 📁 — added
+  // after the initial release, hence the IF NOT EXISTS guard.
+  await sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS icon TEXT;`;
+
+  // AI-generated metadata (see lib/ai.js) — a one-line summary and a short
+  // list of tags produced by the OpenRouter auto-sort agent when you drop a
+  // link/photo/note without picking a folder yourself. Both stay null for
+  // items you file manually, or if the AI call fails.
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS summary TEXT;`;
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS tags TEXT[];`;
+
   await sql`CREATE INDEX IF NOT EXISTS items_folder_id_idx ON items(folder_id);`;
   await sql`CREATE INDEX IF NOT EXISTS folders_parent_id_idx ON folders(parent_id);`;
 

@@ -12,3 +12,5 @@ out/
 # Editor/OS clutter
 .DS_Store
 *.log
+.vercel
+.env*
