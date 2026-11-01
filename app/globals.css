@@ -6,6 +6,16 @@
    setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Tells the browser which theme is showing, so its own built-in parts —
+   dropdown lists, the file picker button, scrollbars, date pickers — are
+   drawn dark too, instead of staying bright white in dark mode. */
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+
 /* Small helper: truncate note/description previews to a few lines instead
    of letting long text blow out a card's height. */
 .line-clamp-2 {

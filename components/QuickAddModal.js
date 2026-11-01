@@ -172,7 +172,7 @@ export default function QuickAddModal({ currentFolderId }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xl leading-none text-white"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xl leading-none text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
         aria-label="Add"
       >
         +
