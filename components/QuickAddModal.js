@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { flattenWithDepth } from '@/lib/folderTree';
 import { saveItem as postItem, saveLink } from '@/lib/saveItem';
+import { upload } from '@vercel/blob/client';
+import { checkUpload, uploadPathname } from '@/lib/uploadRules';
 
 const TYPES = [
   { key: 'link', label: '🔗 Add link' },
@@ -115,7 +117,7 @@ export default function QuickAddModal({ currentFolderId }) {
           title: noteText.slice(0, 40),
         });
       } else if (type === 'photo' && file) {
-        const { url: imageUrl } = await uploadFile(file);
+        const { url: imageUrl } = await uploadFile(file, 'photo');
         await saveItem({
           folderId: isAutoSort ? null : Number(folderId),
           type: 'photo',
@@ -126,7 +128,7 @@ export default function QuickAddModal({ currentFolderId }) {
       } else if (type === 'file' && file) {
         // Files reuse the same generic imageUrl column as photos — it's just
         // a URL to whatever got uploaded, not an image-specific field.
-        const { url: fileUrl } = await uploadFile(file);
+        const { url: fileUrl } = await uploadFile(file, 'file');
         await saveItem({
           folderId: isAutoSort ? null : Number(folderId),
           type: 'file',
@@ -144,17 +146,23 @@ export default function QuickAddModal({ currentFolderId }) {
     }
   }
 
-  // Uploads to /api/upload and throws a readable error instead of crashing
-  // on `.json()` if the server errored (e.g. missing Blob credentials).
-  async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) {
-      throw new Error(body?.error || `Upload failed (${res.status})`);
+  // Uploads straight from the browser to Vercel Blob storage (no size limit
+  // from our server in between); /api/upload only hands out permission.
+  // Throws a readable error if anything goes wrong.
+  async function uploadFile(file, kind) {
+    const problem = checkUpload(file, kind);
+    if (problem) throw new Error(problem);
+    try {
+      const blob = await upload(uploadPathname(file.name), file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+        clientPayload: kind, // tells the server which rules apply
+        multipart: file.size > 8 * 1024 * 1024, // big files go up in chunks
+      });
+      return { url: blob.url };
+    } catch (err) {
+      throw new Error(`Upload failed — ${err.message || 'please try again.'}`);
     }
-    return body;
   }
 
   const flatFolders = flattenWithDepth(folders);
