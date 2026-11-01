@@ -182,7 +182,10 @@ keeps your data safely between deploys.
 
 1. Go to your project's **Settings → Environment Variables**.
 2. Add:
-   - `ARCHIVE_PIN` — the PIN you'll type to unlock the app (e.g. `4829`).
+   - `ARCHIVE_PIN` — the PIN you'll type to unlock the app. **Use at least
+     6–8 digits** (e.g. `48293716`), not 4. After 5 wrong tries, a visitor is
+     locked out for 15 minutes, but a short PIN still has far fewer
+     combinations to guess. Letters work too — the app accepts any text.
    - `AUTH_SECRET` — any long random text (e.g. mash your keyboard for 30
      characters). This is used to cryptographically sign your login
      session so no one can fake being logged in without knowing your PIN.

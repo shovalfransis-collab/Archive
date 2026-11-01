@@ -1,18 +1,27 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkPin, makeSessionToken, isValidSessionToken } from '../lib/auth.js';
+import { checkPin, safeEqual, makeSessionToken, isValidSessionToken } from '../lib/auth.js';
 
 beforeEach(() => {
   process.env.AUTH_SECRET = 'test-secret-that-is-long-enough';
   process.env.ARCHIVE_PIN = '4321';
 });
 
-test('checkPin accepts only the exact PIN string', () => {
-  assert.equal(checkPin('4321'), true);
-  assert.equal(checkPin('1234'), false);
-  assert.equal(checkPin(4321), false); // a number, not a string
-  assert.equal(checkPin(''), false);
-  assert.equal(checkPin(undefined), false);
+test('checkPin accepts only the exact PIN string', async () => {
+  assert.equal(await checkPin('4321'), true);
+  assert.equal(await checkPin('1234'), false);
+  assert.equal(await checkPin('43210'), false);
+  assert.equal(await checkPin(4321), false); // a number, not a string
+  assert.equal(await checkPin(''), false);
+  assert.equal(await checkPin(undefined), false);
+});
+
+test('safeEqual compares strings exactly', async () => {
+  assert.equal(await safeEqual('abc', 'abc'), true);
+  assert.equal(await safeEqual('abc', 'abd'), false);
+  assert.equal(await safeEqual('abc', 'abcd'), false);
+  assert.equal(await safeEqual('', ''), true);
+  assert.equal(await safeEqual('a', undefined), false);
 });
 
 test('a freshly made session token is valid', async () => {

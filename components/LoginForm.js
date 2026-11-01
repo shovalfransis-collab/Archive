@@ -16,20 +16,31 @@ export default function LoginForm({ nextPath = '/' }) {
     setError('');
     setSubmitting(true);
 
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin }),
-    });
+    let res;
+    try {
+      res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+    } catch {
+      setSubmitting(false);
+      setError('Couldn’t reach the server — check your connection.');
+      return;
+    }
 
     setSubmitting(false);
 
     if (res.ok) {
       router.replace(nextPath);
       router.refresh();
-    } else {
-      setError('Wrong PIN — try again.');
+      return;
     }
+    // The server explains what went wrong: wrong PIN (and how many tries
+    // are left), or locked out for a while after too many wrong ones.
+    const data = await res.json().catch(() => null);
+    setError(data?.error || 'Wrong PIN — try again.');
+    if (res.status === 429) setPin('');
   }
 
   return (
