@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MoveFolderModal from './MoveFolderModal';
 import { dragSourceProps, useFolderDropTarget, DROP_HIGHLIGHT } from './dragAndDrop';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
 
 // A small palette of common folder emoji, plus the input below lets you
 // type/paste any other emoji.
@@ -25,24 +27,28 @@ export default function FolderTile({ folder, allFolders = [] }) {
   // folders onto this one to move them in.
   const { isOver, dropProps } = useFolderDropTarget(folder.id, allFolders);
 
+  // Each action below shows a message if the server says no (e.g. an empty
+  // name) and leaves the form open, so nothing silently fails.
   async function handleRename(e) {
     e.preventDefault();
-    await fetch(`/api/folders/${folder.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
+    try {
+      await apiRequest(`/api/folders/${folder.id}`, { method: 'PATCH', body: { name } });
+    } catch (err) {
+      showError(`Couldn’t rename: ${err.message}`);
+      return;
+    }
     setRenaming(false);
     setMenuOpen(false);
     router.refresh();
   }
 
   async function handleIconChange(icon) {
-    await fetch(`/api/folders/${folder.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ icon }),
-    });
+    try {
+      await apiRequest(`/api/folders/${folder.id}`, { method: 'PATCH', body: { icon } });
+    } catch (err) {
+      showError(`Couldn’t change the icon: ${err.message}`);
+      return;
+    }
     setPickingIcon(false);
     setMenuOpen(false);
     setCustomIcon('');
@@ -50,8 +56,14 @@ export default function FolderTile({ folder, allFolders = [] }) {
   }
 
   async function handleDelete() {
+    setMenuOpen(false);
     if (!confirm(`Delete "${folder.name}" and everything inside it? This can't be undone.`)) return;
-    await fetch(`/api/folders/${folder.id}`, { method: 'DELETE' });
+    try {
+      await apiRequest(`/api/folders/${folder.id}`, { method: 'DELETE' });
+    } catch (err) {
+      showError(`Couldn’t delete “${folder.name}”: ${err.message}`);
+      return;
+    }
     router.refresh();
   }
 

@@ -7,6 +7,8 @@ import { flattenWithDepth } from '@/lib/folderTree';
 import { saveItem as postItem, saveLink } from '@/lib/saveItem';
 import { upload } from '@vercel/blob/client';
 import { checkUpload, uploadPathname } from '@/lib/uploadRules';
+import { apiRequest } from '@/lib/apiClient';
+import { showToast, showError } from '@/lib/toast';
 
 const TYPES = [
   { key: 'link', label: '🔗 Add link' },
@@ -31,9 +33,6 @@ export default function QuickAddModal({ currentFolderId }) {
   const [folders, setFolders] = useState([]);
   const [folderId, setFolderId] = useState('');
   const [saving, setSaving] = useState(false);
-  // Brief "Filed in X" notification shown after an auto-sorted save.
-  // { folderName, folderIsNew } while visible, otherwise null.
-  const [toast, setToast] = useState(null);
 
   const [url, setUrl] = useState('');
   const [noteText, setNoteText] = useState('');
@@ -48,9 +47,9 @@ export default function QuickAddModal({ currentFolderId }) {
   // since last time).
   useEffect(() => {
     if (!open) return;
-    fetch('/api/folders')
-      .then((res) => res.json())
-      .then(setFolders);
+    apiRequest('/api/folders')
+      .then(setFolders)
+      .catch((err) => showError(`Couldn’t load your folders: ${err.message}`));
   }, [open]);
 
   // Picking a type also picks a sensible default folder. Inside a folder
@@ -66,12 +65,6 @@ export default function QuickAddModal({ currentFolderId }) {
     }
   }
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   function closeAndReset() {
     setOpen(false);
     setType(null);
@@ -85,7 +78,7 @@ export default function QuickAddModal({ currentFolderId }) {
   // folderId was sent), surfaces a short toast naming where it landed.
   function showToastIfSorted(saved) {
     if (saved.autoSorted) {
-      setToast({ folderName: saved.folderName, folderIsNew: saved.folderIsNew });
+      showToast(`✨ Filed in ${saved.folderName}${saved.folderIsNew ? ' (new folder)' : ''}`);
     }
   }
 
@@ -140,7 +133,8 @@ export default function QuickAddModal({ currentFolderId }) {
       closeAndReset();
       router.refresh();
     } catch (err) {
-      alert(`Couldn't save that: ${err.message}`);
+      // The modal stays open with what you typed, so you can try again.
+      showError(`Couldn’t save that: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -297,14 +291,6 @@ export default function QuickAddModal({ currentFolderId }) {
               </form>
             )}
           </div>
-        </div>,
-        document.body
-      )}
-
-      {toast && createPortal(
-        <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full bg-neutral-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-neutral-100 dark:text-neutral-900">
-          ✨ Filed in <strong>{toast.folderName}</strong>
-          {toast.folderIsNew ? ' (new folder)' : ''}
         </div>,
         document.body
       )}

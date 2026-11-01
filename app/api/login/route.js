@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { checkPin, makeSessionToken, COOKIE_NAME } from '@/lib/auth';
+import { readJson } from '@/lib/api';
 
 export async function POST(request) {
-  const { pin } = await request.json();
+  const { pin } = (await readJson(request)) || {};
 
   if (!checkPin(pin)) {
     return NextResponse.json({ error: 'Wrong PIN' }, { status: 401 });

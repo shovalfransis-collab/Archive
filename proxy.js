@@ -33,12 +33,17 @@ export async function proxy(request) {
   const valid = await isValidSessionToken(token);
 
   if (!valid) {
+    // API calls get a plain "401 not logged in" the app can show, rather
+    // than being redirected to the login page's HTML.
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'You’re logged out. Please log in again.' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     // Remember which page you were heading to (e.g. a link shared from your
     // phone, at /add?url=…) so logging in takes you straight back there.
     // The login page checks this is a path on this site before using it
-    // (lib/safeRedirect.js). API calls don't need it — they're not pages.
-    if (pathname !== '/' && !pathname.startsWith('/api/')) {
+    // (lib/safeRedirect.js).
+    if (pathname !== '/') {
       loginUrl.searchParams.set('next', pathname + search);
     }
     return NextResponse.redirect(loginUrl);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { apiRequest } from '@/lib/apiClient';
 
 // Global search input in the header. Searches titles, notes, URLs, tags,
 // summaries and descriptions
@@ -17,8 +18,11 @@ export default function SearchBar() {
     // Wait a beat after typing stops instead of firing a search request on
     // every single keystroke.
     const timeout = setTimeout(async () => {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      setResults(await res.json());
+      try {
+        setResults(await apiRequest(`/api/search?q=${encodeURIComponent(query)}`));
+      } catch {
+        setResults([]); // shows "No results" rather than breaking the box
+      }
       setOpen(true);
     }, 250);
     return () => clearTimeout(timeout);

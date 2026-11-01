@@ -1,5 +1,6 @@
 import './globals.css';
 import AppShell from '@/components/AppShell';
+import Toaster from '@/components/Toaster';
 
 export const metadata = {
   title: 'The Archive',
@@ -42,6 +43,8 @@ export default function RootLayout({ children }) {
         {/* AppShell renders the header (logo, search, quick-add) on every
             page except the login screen — see components/AppShell.js. */}
         <AppShell>{children}</AppShell>
+        {/* Pop-up messages ("Saved", "Couldn't delete…") — see lib/toast.js. */}
+        <Toaster />
       </body>
     </html>
   );

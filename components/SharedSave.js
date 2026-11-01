@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { saveItem, saveLink } from '@/lib/saveItem';
+import { apiRequest } from '@/lib/apiClient';
 
 // The screen you land on after sharing something to The Archive (from your
 // phone's share sheet, the bookmarklet, or an iPhone Shortcut). It saves
@@ -61,8 +62,13 @@ export default function SharedSave({ url, title, text, autoSave = true }) {
 
   async function handleUndo() {
     setStatus('undoing');
-    const res = await fetch(`/api/items/${saved.id}`, { method: 'DELETE' }).catch(() => null);
-    setStatus(res?.ok ? 'undone' : 'saved');
+    try {
+      await apiRequest(`/api/items/${saved.id}`, { method: 'DELETE' });
+      setStatus('undone');
+    } catch (err) {
+      setError(`Couldn’t undo: ${err.message}`);
+      setStatus('saved');
+    }
   }
 
   // Opened as a popup by the bookmarklet → close it. Otherwise go home.
@@ -118,6 +124,10 @@ export default function SharedSave({ url, title, text, autoSave = true }) {
               )}
             </p>
           </>
+        )}
+
+        {status === 'saved' && error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
 
         {status === 'undone' && <p className="text-neutral-500 dark:text-neutral-400">Removed.</p>}

@@ -1,25 +1,21 @@
 import { NextResponse } from 'next/server';
-import { createItem, getItems, getAllFolders, createFolder } from '@/lib/db';
+import { createItem, getItems, getAllFolders, createFolder, getFolder } from '@/lib/db';
+import { jsonError, readJson, withErrors } from '@/lib/api';
+import { toId, validateNewItem } from '@/lib/validate';
 import { classifyItem } from '@/lib/ai';
 
-export async function GET(request) {
+export const GET = withErrors(async (request) => {
   const { searchParams } = new URL(request.url);
-  const folderId = searchParams.get('folderId');
+  const folderId = toId(searchParams.get('folderId'));
+  if (!folderId) return jsonError('folderId is required');
 
-  if (!folderId) {
-    return NextResponse.json({ error: 'folderId is required' }, { status: 400 });
-  }
-
-  const items = await getItems(Number(folderId));
+  const items = await getItems(folderId);
   return NextResponse.json(items);
-}
+});
 
-export async function POST(request) {
-  const data = await request.json();
-
-  if (!data.type) {
-    return NextResponse.json({ error: 'type is required' }, { status: 400 });
-  }
+export const POST = withErrors(async (request) => {
+  const { data, error } = validateNewItem(await readJson(request));
+  if (error) return jsonError(error);
 
   // If the browser didn't pick a folder, this is the "let AI sort it" path
   // (see QuickAddModal) — ask OpenRouter which folder fits, or invent one,
@@ -60,14 +56,20 @@ export async function POST(request) {
       tags: classification?.tags ?? null,
     });
 
-    return NextResponse.json({
-      ...item,
-      autoSorted: true,
-      folderName,
-      folderIsNew,
-    });
+    return NextResponse.json(
+      {
+        ...item,
+        autoSorted: true,
+        folderName,
+        folderIsNew,
+      },
+      { status: 201 }
+    );
   }
 
+  if (!(await getFolder(data.folderId))) {
+    return jsonError('The folder you picked no longer exists.', 404);
+  }
   const item = await createItem(data);
-  return NextResponse.json(item);
-}
+  return NextResponse.json(item, { status: 201 });
+});

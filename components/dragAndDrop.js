@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { canDropOnFolder as canDrop } from '@/lib/folderTree';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
 
 // Native HTML5 drag-and-drop for moving items and folders. (No library:
 // the built-in browser API covers this; on phones, where dragging is
@@ -51,14 +53,13 @@ export function useFolderDropTarget(targetId, allFolders) {
     currentDrag = null;
 
     const isItem = drag.kind === 'item';
-    const res = await fetch(isItem ? `/api/items/${drag.id}` : `/api/folders/${drag.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(isItem ? { folderId: targetId } : { parentId: targetId }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      alert(body?.error || `Couldn't move that ${isItem ? 'item' : 'folder'}.`);
+    try {
+      await apiRequest(isItem ? `/api/items/${drag.id}` : `/api/folders/${drag.id}`, {
+        method: 'PATCH',
+        body: isItem ? { folderId: targetId } : { parentId: targetId },
+      });
+    } catch (err) {
+      showError(`Couldn’t move that ${isItem ? 'item' : 'folder'}: ${err.message}`);
       return;
     }
     router.refresh();

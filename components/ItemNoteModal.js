@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
 
 // Lets you add or edit the free-text annotation attached to a link or photo
 // item — separate from a note item's own body (that's NoteViewModal).
@@ -13,11 +15,14 @@ export default function ItemNoteModal({ item, onClose }) {
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
-    });
+    try {
+      await apiRequest(`/api/items/${item.id}`, { method: 'PATCH', body: { note } });
+    } catch (err) {
+      // Keep the editor open so your text isn't lost.
+      showError(`Couldn’t save the note: ${err.message}`);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onClose();
     router.refresh();

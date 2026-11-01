@@ -7,6 +7,8 @@ import MoveToFolderModal from './MoveToFolderModal';
 import NoteViewModal from './NoteViewModal';
 import ItemNoteModal from './ItemNoteModal';
 import { dragSourceProps } from './dragAndDrop';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
 
 // Shown under any item type when the AI auto-sort agent (lib/ai.js) tagged
 // it with a summary and/or tags. Absent for manually-filed items.
@@ -49,8 +51,14 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
   const router = useRouter();
 
   async function handleDelete() {
+    setMenuOpen(false);
     if (!confirm('Delete this item?')) return;
-    await fetch(`/api/items/${item.id}`, { method: 'DELETE' });
+    try {
+      await apiRequest(`/api/items/${item.id}`, { method: 'DELETE' });
+    } catch (err) {
+      showError(`Couldn’t delete that item: ${err.message}`);
+      return;
+    }
     router.refresh();
   }
 

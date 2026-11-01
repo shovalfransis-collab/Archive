@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { renderMarkdown } from '@/lib/markdown';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
 
 // Opens a note to read it fully rendered as Markdown, with an Edit mode
 // that's a plain textarea plus two toolbar buttons that insert Markdown
@@ -26,11 +28,14 @@ export default function NoteViewModal({ item, onClose }) {
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
+    try {
+      await apiRequest(`/api/items/${item.id}`, { method: 'PATCH', body: { content } });
+    } catch (err) {
+      // Keep the editor open so your text isn't lost.
+      showError(`Couldn’t save the note: ${err.message}`);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onClose(); // close the whole modal so the card re-renders with fresh content
     router.refresh();

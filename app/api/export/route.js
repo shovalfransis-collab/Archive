@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAllFolders, getAllItems } from '@/lib/db';
+import { withErrors } from '@/lib/api';
 
 // Downloads a backup of the whole archive as one JSON file: every folder
 // (with parent_id, so the tree can be rebuilt) and every item (links,
 // notes, annotations, AI tags...). Photos and uploaded files are included
 // as their storage URLs, not the files themselves.
-export async function GET() {
+export const GET = withErrors(async () => {
   const [folders, items] = await Promise.all([getAllFolders(), getAllItems()]);
 
   const backup = {
@@ -26,4 +27,4 @@ export async function GET() {
       'Cache-Control': 'no-store',
     },
   });
-}
+});
