@@ -12,10 +12,7 @@ export default function SearchBar() {
   const boxRef = useRef(null);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!query.trim()) return;
     // Wait a beat after typing stops instead of firing a search request on
     // every single keystroke.
     const timeout = setTimeout(async () => {
@@ -34,6 +31,10 @@ export default function SearchBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // An empty box shows no results, without needing to clear the old ones.
+  const hasQuery = Boolean(query.trim());
+  const visibleResults = hasQuery ? results : [];
+
   return (
     <div ref={boxRef} className="relative max-w-md">
       <input
@@ -43,9 +44,9 @@ export default function SearchBar() {
         placeholder="Search everything…"
         className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
       />
-      {open && results.length > 0 && (
+      {open && visibleResults.length > 0 && (
         <div className="absolute z-30 mt-1 max-h-80 w-full overflow-y-auto rounded border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
-          {results.map((r) => (
+          {visibleResults.map((r) => (
             <a
               key={r.id}
               href={`/folder/${r.folder_id}`}
@@ -58,7 +59,7 @@ export default function SearchBar() {
           ))}
         </div>
       )}
-      {open && query.trim() && results.length === 0 && (
+      {open && hasQuery && visibleResults.length === 0 && (
         <div className="absolute z-30 mt-1 w-full rounded border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-400 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
           No results
         </div>

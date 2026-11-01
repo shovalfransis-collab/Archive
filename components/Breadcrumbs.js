@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 // Pure display component — no interactivity needed, so it stays a plain
 // Server Component (no 'use client'). Walks up the parent_id chain to
 // build the "Home / Parent / Current" trail.
@@ -12,15 +14,15 @@ export default function Breadcrumbs({ folder, allFolders }) {
 
   return (
     <nav className="flex flex-wrap gap-1 text-sm text-neutral-500 dark:text-neutral-400">
-      <a href="/" className="hover:underline">
+      <Link href="/" className="hover:underline">
         Home
-      </a>
+      </Link>
       {trail.map((f) => (
         <span key={f.id}>
           {' / '}
-          <a href={`/folder/${f.id}`} className="hover:underline">
+          <Link href={`/folder/${f.id}`} className="hover:underline">
             {f.name}
-          </a>
+          </Link>
         </span>
       ))}
     </nav>

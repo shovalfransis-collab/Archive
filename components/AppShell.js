@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import SearchBar from './SearchBar';
 import QuickAddModal from './QuickAddModal';
@@ -31,9 +32,9 @@ export default function AppShell({ children }) {
   return (
     <div>
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
-        <a href="/" className="shrink-0 text-lg font-semibold">
+        <Link href="/" className="shrink-0 text-lg font-semibold">
           🗄️ The Archive
-        </a>
+        </Link>
         <div className="flex-1">
           <SearchBar />
         </div>

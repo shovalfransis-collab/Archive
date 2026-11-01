@@ -41,24 +41,27 @@ export default function QuickAddModal({ currentFolderId }) {
 
   const router = useRouter();
 
+  // Load the folder list each time the modal opens (it may have changed
+  // since last time).
   useEffect(() => {
-    if (open) {
-      fetch('/api/folders')
-        .then((res) => res.json())
-        .then(setFolders);
-      // Inside a folder already: default to it. Otherwise default to
-      // auto-sort for links/photos, and to "choose one" for notes (set
-      // once `type` is picked, below).
-      setFolderId(currentFolderId ?? '');
-    }
-  }, [open, currentFolderId]);
+    if (!open) return;
+    fetch('/api/folders')
+      .then((res) => res.json())
+      .then(setFolders);
+  }, [open]);
 
-  // Once you pick a type, set a sensible default for the folder field if
-  // one hasn't already been set from currentFolderId above.
-  useEffect(() => {
-    if (!type || currentFolderId) return;
-    setFolderId(type === 'note' ? '' : AUTO_SORT);
-  }, [type, currentFolderId]);
+  // Picking a type also picks a sensible default folder. Inside a folder
+  // already: default to it. Otherwise default to auto-sort for
+  // links/photos/files, and to "choose one" for notes. Done here in the
+  // click handler (not in an effect) so it happens in the same render.
+  function chooseType(nextType) {
+    setType(nextType);
+    if (currentFolderId) {
+      setFolderId(String(currentFolderId));
+    } else {
+      setFolderId(nextType === 'note' ? '' : AUTO_SORT);
+    }
+  }
 
   useEffect(() => {
     if (!toast) return;
@@ -196,7 +199,7 @@ export default function QuickAddModal({ currentFolderId }) {
                 {TYPES.map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setType(t.key)}
+                    onClick={() => chooseType(t.key)}
                     className="block w-full rounded border border-neutral-200 px-3 py-2 text-left hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700"
                   >
                     {t.label}
