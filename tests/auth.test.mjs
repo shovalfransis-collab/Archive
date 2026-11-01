@@ -99,3 +99,38 @@ test('wrong, missing, or old share keys are rejected', async () => {
   process.env.ARCHIVE_PIN = '0000';
   assert.equal(await isValidShareKey(key), false);
 });
+
+import { authConfigProblem, MIN_SECRET_LENGTH } from '../lib/auth.js';
+
+test('authConfigProblem explains missing or weak settings', () => {
+  assert.equal(authConfigProblem(), null);
+
+  delete process.env.ARCHIVE_PIN;
+  assert.match(authConfigProblem(), /ARCHIVE_PIN is not set/);
+  process.env.ARCHIVE_PIN = '   ';
+  assert.match(authConfigProblem(), /ARCHIVE_PIN is not set/);
+  process.env.ARCHIVE_PIN = '4321';
+
+  delete process.env.AUTH_SECRET;
+  assert.match(authConfigProblem(), /AUTH_SECRET is not set/);
+  process.env.AUTH_SECRET = 'change-me-to-something-random';
+  assert.match(authConfigProblem(), /example value/);
+  process.env.AUTH_SECRET = 'x'.repeat(MIN_SECRET_LENGTH - 1);
+  assert.match(authConfigProblem(), /too short/);
+  process.env.AUTH_SECRET = 'x'.repeat(MIN_SECRET_LENGTH);
+  assert.equal(authConfigProblem(), null);
+});
+
+test('with a missing secret, nothing logs in and no tokens are made', async () => {
+  const token = await makeSessionToken();
+  delete process.env.AUTH_SECRET;
+  assert.equal(await checkPin('4321'), false);
+  assert.equal(await isValidSessionToken(token), false);
+  await assert.rejects(makeSessionToken(), /not configured/);
+});
+
+test('with a missing PIN, nothing logs in (not even an empty PIN)', async () => {
+  delete process.env.ARCHIVE_PIN;
+  assert.equal(await checkPin(''), false);
+  assert.equal(await checkPin('undefined'), false);
+});

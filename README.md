@@ -186,8 +186,9 @@ keeps your data safely between deploys.
      6–8 digits** (e.g. `48293716`), not 4. After 5 wrong tries, a visitor is
      locked out for 15 minutes, but a short PIN still has far fewer
      combinations to guess. Letters work too — the app accepts any text.
-   - `AUTH_SECRET` — any long random text (e.g. mash your keyboard for 30
-     characters). This is used to cryptographically sign your login
+   - `AUTH_SECRET` — long random text, **at least 24 characters** (in
+     Terminal, `openssl rand -base64 32` makes a good one). The app won't
+     run if it's missing, too short, or still the example value. This is used to cryptographically sign your login
      session so no one can fake being logged in without knowing your PIN.
      A login lasts 90 days on each device. **Changing `AUTH_SECRET` (or the
      PIN) logs out every device at once** — handy if you lose a phone.

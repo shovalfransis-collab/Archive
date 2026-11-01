@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkPin, makeSessionToken, COOKIE_NAME, SESSION_DAYS } from '@/lib/auth';
+import { checkPin, makeSessionToken, COOKIE_NAME, SESSION_DAYS, authIsConfigured } from '@/lib/auth';
 import { getLoginLock, recordLoginFailure, clearLoginFailures } from '@/lib/db';
 import { jsonError, readJson, withErrors } from '@/lib/api';
 import {
@@ -15,6 +15,12 @@ import {
 // visitor gets "429 Too Many Requests" until the lockout ends — even with
 // the right PIN, so guessing during a lockout gets you nowhere.
 export const POST = withErrors(async (request) => {
+  // Checked here too (not only in the proxy) so login can never work with
+  // a missing PIN or secret. Details are in the server log.
+  if (!authIsConfigured()) {
+    return jsonError('The Archive isn’t set up correctly yet. Check the server logs.', 503);
+  }
+
   const key = clientKey(request.headers);
 
   const lockedUntil = await getLoginLock(key);
