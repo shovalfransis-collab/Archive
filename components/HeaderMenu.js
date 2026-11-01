@@ -50,6 +50,9 @@ export default function HeaderMenu() {
       </button>
       {open && (
         <div className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+          <Link href="/recent" onClick={() => setOpen(false)} className={itemClass}>
+            🕘 Recent
+          </Link>
           <Link href="/save-anywhere" onClick={() => setOpen(false)} className={itemClass}>
             📲 Save from anywhere…
           </Link>
