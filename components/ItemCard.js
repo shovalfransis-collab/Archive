@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MoveToFolderModal from './MoveToFolderModal';
 import NoteViewModal from './NoteViewModal';
@@ -18,12 +19,13 @@ function AiMetadata({ item }) {
       {item.tags && item.tags.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
           {item.tags.map((tag) => (
-            <span
+            <Link
               key={tag}
-              className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300"
+              href={`/tag/${encodeURIComponent(tag)}`}
+              className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
             >
               #{tag}
-            </span>
+            </Link>
           ))}
         </div>
       )}
@@ -33,7 +35,11 @@ function AiMetadata({ item }) {
 
 // Renders one saved item — a link, photo, or note — with a preview
 // appropriate to its type, plus a hover menu for move/delete.
-export default function ItemCard({ item, allFolders }) {
+//
+// `showFolder` adds an "in <folder>" line at the bottom — used on pages that
+// mix items from many folders (a tag page, Recent), where it's otherwise
+// unclear where each one lives. Needs `item.folder_name` from the query.
+export default function ItemCard({ item, allFolders, showFolder = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moving, setMoving] = useState(false);
   const [viewingNote, setViewingNote] = useState(false);
@@ -150,6 +156,15 @@ export default function ItemCard({ item, allFolders }) {
         </a>
       )}
       {item.type === 'file' && <AiMetadata item={item} />}
+
+      {showFolder && item.folder_id && (
+        <Link
+          href={`/folder/${item.folder_id}`}
+          className="block truncate border-t border-neutral-100 px-3 py-1.5 text-[11px] text-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:text-neutral-200"
+        >
+          in 📁 {item.folder_name || 'a folder'}
+        </Link>
+      )}
 
       {moving && (
         <MoveToFolderModal item={item} allFolders={allFolders} onClose={() => setMoving(false)} />

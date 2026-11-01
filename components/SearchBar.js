@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-// Global search input in the header. Searches title, note text, and URL
+// Global search input in the header. Searches titles, notes, URLs, tags,
+// summaries and descriptions
 // across every folder (see /api/search) and shows results in a dropdown
 // that link straight into their folder.
 export default function SearchBar() {
