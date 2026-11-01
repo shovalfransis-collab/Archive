@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useDismiss } from './useDismiss';
 
 // The "☰" menu at the right of the header, for things you don't need on
 // every visit — keeps the header uncluttered, especially on a phone.
@@ -11,22 +12,8 @@ export default function HeaderMenu() {
   const boxRef = useRef(null);
   const router = useRouter();
 
-  // Close when clicking anywhere outside the menu, or pressing Esc.
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e) {
-      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
-    }
-    function onKeyDown(e) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+  // Close when tapping anywhere outside the menu, or pressing Esc.
+  useDismiss(open, () => setOpen(false), boxRef);
 
   async function handleLogout() {
     setOpen(false);

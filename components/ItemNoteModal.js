@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/apiClient';
 import { showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 // Lets you add or edit the free-text annotation attached to a link or photo
 // item — separate from a note item's own body (that's NoteViewModal).
@@ -12,6 +13,9 @@ export default function ItemNoteModal({ item, onClose }) {
   const [note, setNote] = useState(item.note || '');
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  // Esc = Cancel, unless you've typed unsaved changes (then use Cancel).
+  useEscape(note === (item.note || ''), onClose);
 
   async function handleSave() {
     setSaving(true);

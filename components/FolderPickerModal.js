@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { flattenWithDepth } from '@/lib/folderTree';
+import { useEscape } from './useDismiss';
 
 // A folder picker shown as a modal, shared by "move item" and "move folder".
 //
@@ -26,6 +27,7 @@ export default function FolderPickerModal({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const flatFolders = flattenWithDepth(allFolders);
+  useEscape(true, onClose);
 
   async function pick(id) {
     setBusy(true);

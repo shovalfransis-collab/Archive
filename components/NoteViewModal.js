@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { renderMarkdown } from '@/lib/markdown';
 import { apiRequest } from '@/lib/apiClient';
 import { showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 // Opens a note to read it fully rendered as Markdown, with an Edit mode
 // that's a plain textarea plus two toolbar buttons that insert Markdown
@@ -17,6 +18,12 @@ export default function NoteViewModal({ item, onClose }) {
   const [content, setContent] = useState(item.content || '');
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  // Esc = Cancel: closes the note, or leaves edit mode. But if you've
+  // typed unsaved changes, Esc does nothing — use Cancel to discard them —
+  // so one stray key press can't throw away your writing.
+  const dirty = editing && content !== (item.content || '');
+  useEscape(!dirty, () => (editing ? setEditing(false) : onClose()));
 
   function wrapSelection(before, after = '') {
     const el = document.getElementById(`note-textarea-${item.id}`);

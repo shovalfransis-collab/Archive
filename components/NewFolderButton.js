@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/apiClient';
 import { showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 // A small "+ New folder" button that turns into an inline name field when
 // clicked, rather than popping up a whole modal for something this simple.
@@ -11,6 +12,10 @@ export default function NewFolderButton({ parentId }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const router = useRouter();
+  useEscape(adding, () => {
+    setAdding(false);
+    setName('');
+  });
 
   async function handleSubmit(e) {
     e.preventDefault();

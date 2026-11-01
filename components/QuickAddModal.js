@@ -9,6 +9,7 @@ import { upload } from '@vercel/blob/client';
 import { checkUpload, uploadPathname } from '@/lib/uploadRules';
 import { apiRequest } from '@/lib/apiClient';
 import { showToast, showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 const TYPES = [
   { key: 'link', label: '🔗 Add link' },
@@ -42,6 +43,11 @@ export default function QuickAddModal({ currentFolderId }) {
   const [annotation, setAnnotation] = useState('');
 
   const router = useRouter();
+
+  // Esc = Cancel while the modal is open — unless you've typed something
+  // (then use Cancel), so a stray key press doesn't lose it.
+  const hasInput = Boolean(url || noteText || file || annotation);
+  useEscape(open && !saving && !hasInput, closeAndReset);
 
   // Load the folder list each time the modal opens (it may have changed
   // since last time).

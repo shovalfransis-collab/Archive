@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MoveFolderModal from './MoveFolderModal';
 import { dragSourceProps, useFolderDropTarget, DROP_HIGHLIGHT } from './dragAndDrop';
 import { apiRequest } from '@/lib/apiClient';
 import { showError } from '@/lib/toast';
+import { useDismiss, useEscape } from './useDismiss';
 
 // A small palette of common folder emoji, plus the input below lets you
 // type/paste any other emoji.
@@ -26,6 +27,16 @@ export default function FolderTile({ folder, allFolders = [] }) {
   // Drag this folder onto another one to move it there; drop items or other
   // folders onto this one to move them in.
   const { isOver, dropProps } = useFolderDropTarget(folder.id, allFolders);
+
+  // The ⋯ menu closes on a tap outside it or Esc; Esc also cancels
+  // renaming / icon picking.
+  const menuRef = useRef(null);
+  useDismiss(menuOpen, () => setMenuOpen(false), menuRef);
+  useEscape(renaming, () => {
+    setRenaming(false);
+    setName(folder.name);
+  });
+  useEscape(pickingIcon, () => setPickingIcon(false));
 
   // Each action below shows a message if the server says no (e.g. an empty
   // name) and leaves the form open, so nothing silently fails.
@@ -159,47 +170,55 @@ export default function FolderTile({ folder, allFolders = [] }) {
         <span className="text-4xl">{folder.icon || '📁'}</span>
         <span className="w-full break-words text-sm">{folder.name}</span>
       </Link>
-      <button
-        onClick={() => setMenuOpen((v) => !v)}
-        className="absolute right-1 top-1 px-1 text-neutral-500 opacity-0 group-hover:opacity-100"
-        aria-label="Folder options"
-      >
-        ⋯
-      </button>
-      {menuOpen && (
-        <div className="absolute right-1 top-6 z-10 rounded border border-neutral-200 bg-white text-sm shadow dark:border-neutral-700 dark:bg-neutral-800">
-          <button
-            onClick={() => {
-              setRenaming(true);
-              setMenuOpen(false);
-            }}
-            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
-          >
-            Rename
-          </button>
-          <button
-            onClick={() => {
-              setMoving(true);
-              setMenuOpen(false);
-            }}
-            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
-          >
-            Move to…
-          </button>
-          <button
-            onClick={() => setPickingIcon(true)}
-            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
-          >
-            Change icon
-          </button>
-          <button
-            onClick={handleDelete}
-            className="block w-full px-3 py-1 text-left text-red-600 hover:bg-neutral-50 dark:text-red-400 dark:hover:bg-neutral-700"
-          >
-            Delete
-          </button>
-        </div>
-      )}
+      {/* Button and menu share one wrapper, so tapping ⋯ again isn't an
+          "outside" tap. `contents` keeps it out of the layout. */}
+      <div ref={menuRef} className="contents">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className={`absolute right-1 top-1 rounded px-1 text-neutral-500 pointer-coarse:px-2 pointer-coarse:py-0.5 dark:text-neutral-400 ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100'}`}
+          aria-label="Folder options"
+          aria-expanded={menuOpen}
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className="absolute right-1 top-7 z-10 rounded border border-neutral-200 bg-white text-sm shadow dark:border-neutral-700 dark:bg-neutral-800">
+            <button
+              onClick={() => {
+                setRenaming(true);
+                setMenuOpen(false);
+              }}
+              className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+            >
+              Rename
+            </button>
+            <button
+              onClick={() => {
+                setMoving(true);
+                setMenuOpen(false);
+              }}
+              className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+            >
+              Move to…
+            </button>
+            <button
+              onClick={() => {
+                setPickingIcon(true);
+                setMenuOpen(false);
+              }}
+              className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+            >
+              Change icon
+            </button>
+            <button
+              onClick={handleDelete}
+              className="block w-full px-3 py-1 text-left text-red-600 hover:bg-neutral-50 dark:text-red-400 dark:hover:bg-neutral-700"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
       {moving && (
         <MoveFolderModal folder={folder} allFolders={allFolders} onClose={() => setMoving(false)} />
       )}

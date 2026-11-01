@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MoveToFolderModal from './MoveToFolderModal';
@@ -9,6 +9,7 @@ import ItemNoteModal from './ItemNoteModal';
 import { dragSourceProps } from './dragAndDrop';
 import { apiRequest } from '@/lib/apiClient';
 import { showError } from '@/lib/toast';
+import { useDismiss } from './useDismiss';
 
 // Shown under any item type when the AI auto-sort agent (lib/ai.js) tagged
 // it with a summary and/or tags. Absent for manually-filed items.
@@ -49,6 +50,9 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
   const [viewingNote, setViewingNote] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const router = useRouter();
+  // The ⋯ menu closes on a tap outside it or Esc.
+  const menuRef = useRef(null);
+  useDismiss(menuOpen, () => setMenuOpen(false), menuRef);
 
   async function handleDelete() {
     setMenuOpen(false);
@@ -67,43 +71,48 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
       {...dragSourceProps({ kind: 'item', id: item.id, folderId: item.folder_id })}
       className="group relative cursor-grab rounded-lg border border-neutral-200 bg-white active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800"
     >
-      <button
-        onClick={() => setMenuOpen((v) => !v)}
-        className="absolute right-1 top-1 z-10 rounded bg-white/80 px-1 text-neutral-500 opacity-0 group-hover:opacity-100 dark:bg-neutral-800/80 dark:text-neutral-400"
-        aria-label="Item options"
-      >
-        ⋯
-      </button>
-      {menuOpen && (
-        <div className="absolute right-1 top-6 z-10 whitespace-nowrap rounded border border-neutral-200 bg-white text-sm shadow dark:border-neutral-700 dark:bg-neutral-800">
-          {item.type !== 'note' && (
+      {/* Button and menu share one wrapper, so tapping ⋯ again isn't an
+          "outside" tap. `contents` keeps it out of the layout. */}
+      <div ref={menuRef} className="contents">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className={`absolute right-1 top-1 z-10 rounded bg-white/80 px-1 text-neutral-500 pointer-coarse:px-2 pointer-coarse:py-0.5 dark:bg-neutral-800/80 dark:text-neutral-400 ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100'}`}
+          aria-label="Item options"
+          aria-expanded={menuOpen}
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className="absolute right-1 top-7 z-10 whitespace-nowrap rounded border border-neutral-200 bg-white text-sm shadow dark:border-neutral-700 dark:bg-neutral-800">
+            {item.type !== 'note' && (
+              <button
+                onClick={() => {
+                  setEditingNote(true);
+                  setMenuOpen(false);
+                }}
+                className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+              >
+                {item.note ? 'Edit note' : 'Add a note…'}
+              </button>
+            )}
             <button
               onClick={() => {
-                setEditingNote(true);
+                setMoving(true);
                 setMenuOpen(false);
               }}
               className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
             >
-              {item.note ? 'Edit note' : 'Add a note…'}
+              Move to folder…
             </button>
-          )}
-          <button
-            onClick={() => {
-              setMoving(true);
-              setMenuOpen(false);
-            }}
-            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
-          >
-            Move to folder…
-          </button>
-          <button
-            onClick={handleDelete}
-            className="block w-full px-3 py-1 text-left text-red-600 hover:bg-neutral-50 dark:text-red-400 dark:hover:bg-neutral-700"
-          >
-            Delete
-          </button>
-        </div>
-      )}
+            <button
+              onClick={handleDelete}
+              className="block w-full px-3 py-1 text-left text-red-600 hover:bg-neutral-50 dark:text-red-400 dark:hover:bg-neutral-700"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
 
       {item.type === 'photo' && (
         <>

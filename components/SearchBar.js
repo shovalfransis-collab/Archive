@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { apiRequest } from '@/lib/apiClient';
+import { useDismiss } from './useDismiss';
 
 // Global search input in the header. Searches titles, notes, URLs, tags,
 // summaries and descriptions
@@ -29,13 +30,8 @@ export default function SearchBar() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Results close on a tap outside the search box, or Esc.
+  useDismiss(open, () => setOpen(false), boxRef);
 
   // An empty box shows no results, without needing to clear the old ones.
   const hasQuery = Boolean(query.trim());
