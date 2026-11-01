@@ -53,6 +53,11 @@ export default function HeaderMenu() {
           <Link href="/save-anywhere" onClick={() => setOpen(false)} className={itemClass}>
             📲 Save from anywhere…
           </Link>
+          {/* A plain link (not client navigation): the server replies with a
+              file download — see app/api/export/route.js. */}
+          <a href="/api/export" download onClick={() => setOpen(false)} className={itemClass}>
+            💾 Export backup (JSON)
+          </a>
           <button onClick={handleLogout} className={`${itemClass} border-t border-neutral-100 dark:border-neutral-700`}>
             Log out
           </button>
