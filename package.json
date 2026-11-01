@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "init-db": "node scripts/init-db.js",
+    "init-db": "node scripts/migrate.js",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"tests/**/*.test.mjs\""
+    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"tests/**/*.test.mjs\"",
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

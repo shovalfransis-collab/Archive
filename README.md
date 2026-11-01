@@ -20,7 +20,9 @@ components/              — reusable pieces of UI (folder tiles, item cards, th
 lib/db.js                — every database query, in one file
 lib/auth.js              — the PIN-gate logic
 lib/ai.js                — the OpenRouter auto-sort agent (folder + tags + summary)
-scripts/init-db.js       — a one-time script that creates the database tables
+migrations/              — numbered SQL files that build up the database tables, in order
+scripts/migrate.js       — runs any migrations your database hasn't had yet
+tests/                   — automated checks for the trickier logic (`npm test`)
 proxy.js                 — checks you're logged in before every page loads
 ```
 
@@ -64,10 +66,12 @@ that's the Terminal app.
    source code — into a file called `.env.local`. Next.js automatically
    loads that file, and it's already excluded from git via `.gitignore` so
    your secrets never get committed.
-5. Create the database tables (only needs to be done once):
+5. Create the database tables:
    ```
-   npm run init-db
+   npm run migrate
    ```
+   (Safe to run any time — it only does what hasn't been done yet. See
+   "Changing the database later" below.)
 
 ### Every time you want to work on it
 
@@ -77,6 +81,36 @@ npm run dev
 
 Then open **http://localhost:3000** in your browser. Changes you make to
 the code appear immediately — no need to restart.
+
+### Checking your work
+
+```
+npm run lint     # looks for common mistakes in the code
+npm test         # runs the automated tests in tests/
+npm run build    # makes sure the app still builds, like Vercel will
+```
+
+### Changing the database later (migrations)
+
+The tables are defined by the numbered files in `migrations/`
+(`001_init.sql`, `002_...`, ...). Your database remembers which ones it has
+already run (in a table called `schema_migrations`), so:
+
+- `npm run migrate -- --status` lists what's applied and what's pending,
+  without changing anything.
+- `npm run migrate` runs only the pending ones. Each file runs all-or-nothing:
+  if something in it fails, none of that file's changes are kept.
+- To change the schema, **add a new file** with the next number (for example
+  `003_add_pinned.sql`). Never edit a file that has already run on your real
+  database.
+- Vercel does **not** run migrations when it deploys. Run
+  `npm run migrate` yourself (with `.env.local` pulled) before deploying code
+  that needs the new tables or columns.
+
+If your database was created before migrations existed (with the old
+`npm run init-db`), that's fine — `001_init.sql` only creates what's
+missing, so running `npm run migrate` on it is safe. (`npm run init-db` still
+works too; it now just runs the migrations.)
 
 ---
 
@@ -179,11 +213,12 @@ Back on your computer (with `.env.local` pulled as in Section 2):
 
 ```
 npx vercel env pull .env.local
-npm run init-db
+npm run migrate
 ```
 
 This connects to your real, deployed database and creates the `folders`
-and `items` tables. You only need to do this once.
+and `items` tables. Run it again whenever a new file appears in
+`migrations/`.
 
 ### Step 8 — Redeploy
 
