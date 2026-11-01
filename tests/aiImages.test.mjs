@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { imageUrlForItem, buildUserContent, classifyItem } from '../lib/Prompts.js';
+import { imageUrlForItem, buildUserContent, classifyItem } from '../lib/ai.js';
 
 const BLOB = 'https://abc.public.blob.vercel-storage.com/uploads';
 

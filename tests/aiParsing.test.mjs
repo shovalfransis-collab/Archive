@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseClassification } from '../lib/Prompts.js';
+import { parseClassification } from '../lib/ai.js';
 
 const folders = [
   { id: 1, name: 'Recipes', parent_id: null },
