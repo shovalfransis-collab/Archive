@@ -1,5 +1,13 @@
-import { NextResponse } from 'next/server';
-import { renameFolder, moveFolder, updateFolderIcon, deleteFolder, getAllFolders } from '@/lib/db';
+import { NextResponse, after } from 'next/server';
+import {
+  renameFolder,
+  moveFolder,
+  updateFolderIcon,
+  deleteFolder,
+  getAllFolders,
+  getUploadUrlsInFolderTree,
+} from '@/lib/db';
+import { deleteUploadedFiles } from '@/lib/blobCleanup';
 import { canMoveFolder } from '@/lib/folderTree';
 import { jsonError, readJson, withErrors } from '@/lib/api';
 import { toId, validateFolderPatch } from '@/lib/validate';
@@ -41,7 +49,15 @@ export const PATCH = withErrors(async (request, { params }) => {
 export const DELETE = withErrors(async (request, { params }) => {
   const { id: idParam } = await params;
   const id = toId(idParam);
-  // Also deletes every subfolder and item inside it (ON DELETE CASCADE).
-  if (!id || !(await deleteFolder(id))) return jsonError('Folder not found', 404);
+  if (!id) return jsonError('Folder not found', 404);
+
+  // Gather the photos/files inside first: deleting the folder also deletes
+  // every subfolder and item inside it (ON DELETE CASCADE), after which
+  // their URLs would be gone.
+  const uploadUrls = await getUploadUrlsInFolderTree(id);
+  if (!(await deleteFolder(id))) return jsonError('Folder not found', 404);
+
+  // Remove them from storage after replying; failures are only logged.
+  if (uploadUrls.length) after(() => deleteUploadedFiles(uploadUrls));
   return NextResponse.json({ ok: true });
 });
