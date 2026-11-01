@@ -17,6 +17,7 @@ function isPublicPath(pathname) {
   return (
     pathname === '/login' ||
     pathname === '/api/login' ||
+    pathname === '/api/logout' || // must work even when the login has already expired
     pathname === '/manifest.webmanifest' ||
     pathname.startsWith('/icons/')
   );
