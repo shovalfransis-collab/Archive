@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createItem, getItems, getAllFolders, createFolder } from '@/lib/db';
-import { classifyItem } from '@/lib/ai';
+import { classifyItem } from '@/lib/Prompts';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
