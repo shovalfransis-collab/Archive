@@ -54,3 +54,31 @@ test('flattenWithDepth lists parents before children with the right depth', () =
 test('flattenWithDepth handles an empty list', () => {
   assert.deepEqual(flattenWithDepth([]), []);
 });
+
+import { getDescendantIds, canMoveFolder } from '../lib/folderTree.js';
+
+test('getDescendantIds includes the folder and everything below it', () => {
+  assert.deepEqual([...getDescendantIds(folders, 2)].sort(), [2, 3, 4, 5]);
+  assert.deepEqual([...getDescendantIds(folders, 5)], [5]);
+});
+
+test('canMoveFolder allows normal moves and moving to top level', () => {
+  assert.equal(canMoveFolder(folders, 5, 1), true); // Retro -> Work
+  assert.equal(canMoveFolder(folders, 4, null), true); // Games -> top level
+  assert.equal(canMoveFolder(folders, 1, 2), true); // Work -> Fun
+});
+
+test('canMoveFolder blocks moving a folder into itself or its subfolders', () => {
+  assert.equal(canMoveFolder(folders, 2, 2), false); // Fun -> Fun
+  assert.equal(canMoveFolder(folders, 2, 4), false); // Fun -> Fun/Games
+  assert.equal(canMoveFolder(folders, 2, 5), false); // Fun -> Fun/Games/Retro
+});
+
+test('canMoveFolder blocks moving into a folder that does not exist', () => {
+  assert.equal(canMoveFolder(folders, 1, 999), false);
+});
+
+test('flattenWithDepth keeps each folder icon', () => {
+  const flat = flattenWithDepth([{ id: 1, name: 'A', parent_id: null, icon: '⭐' }]);
+  assert.equal(flat[0].icon, '⭐');
+});

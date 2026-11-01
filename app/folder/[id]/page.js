@@ -37,7 +37,7 @@ export default async function FolderPage({ params }) {
       {subfolders.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {subfolders.map((f) => (
-            <FolderTile key={f.id} folder={f} />
+            <FolderTile key={f.id} folder={f} allFolders={allFolders} />
           ))}
         </div>
       )}

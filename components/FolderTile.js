@@ -2,15 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import MoveFolderModal from './MoveFolderModal';
 
 // A small palette of common folder emoji, plus the input below lets you
 // type/paste any other emoji.
 const ICON_CHOICES = ['📁', '⭐', '📌', '💼', '🎬', '🎵', '📚', '🖼️', '🍳', '✈️', '💡', '🎮'];
 
 // A single folder tile on the desktop/folder view, with a hover menu for
-// rename/delete/change icon.
-export default function FolderTile({ folder }) {
+// rename/move/delete/change icon. `allFolders` (every folder, flat) is
+// needed for the "Move to…" picker.
+export default function FolderTile({ folder, allFolders = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [pickingIcon, setPickingIcon] = useState(false);
   const [name, setName] = useState(folder.name);
@@ -153,6 +156,15 @@ export default function FolderTile({ folder }) {
             Rename
           </button>
           <button
+            onClick={() => {
+              setMoving(true);
+              setMenuOpen(false);
+            }}
+            className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
+          >
+            Move to…
+          </button>
+          <button
             onClick={() => setPickingIcon(true)}
             className="block w-full px-3 py-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700"
           >
@@ -165,6 +177,9 @@ export default function FolderTile({ folder }) {
             Delete
           </button>
         </div>
+      )}
+      {moving && (
+        <MoveFolderModal folder={folder} allFolders={allFolders} onClose={() => setMoving(false)} />
       )}
     </div>
   );
