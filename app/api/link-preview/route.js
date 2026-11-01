@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { fetchPublicPage, checkFetchableUrl } from '@/lib/safeFetch';
+import { jsonError, readJson } from '@/lib/api';
 
 // Best-effort attempt to fetch a page's title, description, and favicon so a
 // saved link doesn't just show a bare URL. We also prefix the title with the
@@ -11,6 +13,10 @@ import { NextResponse } from 'next/server';
 // dependencies down. If a site blocks fetches or the page doesn't have this
 // metadata, we just fall back to the URL itself; a link is always saved
 // either way.
+//
+// The page is fetched through lib/safeFetch.js, which refuses private and
+// local addresses (so a link can't make our server poke at internal
+// systems), caps the download size, and times out after 5 seconds.
 
 const KNOWN_SITE_NAMES = {
   'youtube.com': 'YouTube',
@@ -66,12 +72,21 @@ async function fetchYouTubePreview(url) {
   };
 }
 
+// Only http(s) favicons — anything else (data:, javascript:) is dropped.
+function safeFaviconUrl(href, pageUrl) {
+  try {
+    const icon = new URL(href, pageUrl);
+    return icon.protocol === 'http:' || icon.protocol === 'https:' ? icon.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchGenericPreview(url) {
-  const res = await fetch(url, {
+  const page = await fetchPublicPage(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TheArchiveBot/1.0)' },
-    signal: AbortSignal.timeout(5000),
   });
-  const html = await res.text();
+  const html = page.body;
 
   const ogTitleMatch = html.match(
     /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i
@@ -92,13 +107,21 @@ async function fetchGenericPreview(url) {
   const rawTitle = (ogTitleMatch ? ogTitleMatch[1] : titleMatch ? titleMatch[1] : url).trim();
   const title = withSitePrefix(rawTitle, siteName);
   const description = descMatch ? descMatch[1].trim() : null;
-  const faviconUrl = new URL(iconMatch ? iconMatch[1] : '/favicon.ico', url).toString();
+  const faviconUrl = safeFaviconUrl(iconMatch ? iconMatch[1] : '/favicon.ico', page.url);
 
   return { title, description, faviconUrl };
 }
 
 export async function POST(request) {
-  const { url } = await request.json();
+  const { url: input } = (await readJson(request)) || {};
+
+  // Bad or non-web URLs get a clear 400 instead of crashing the route.
+  let url;
+  try {
+    url = checkFetchableUrl(input).toString();
+  } catch (err) {
+    return jsonError(err.message, 400);
+  }
 
   const hostname = bareHostname(url);
 
@@ -114,6 +137,8 @@ export async function POST(request) {
   try {
     return NextResponse.json(await fetchGenericPreview(url));
   } catch {
+    // Unreachable, private, too slow… — the link is still saved, just
+    // without a fetched title.
     return NextResponse.json({ title: url, description: null, faviconUrl: null });
   }
 }

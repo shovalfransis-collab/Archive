@@ -74,3 +74,25 @@ test('new item: folderId null means "let the AI choose"; unknown fields are drop
   assert.equal(data.evil, undefined);
   assert.equal(data.note, null);
 });
+
+import { isWebUrl } from '../lib/validate.js';
+
+test('links must be http(s)', () => {
+  assert.ok(validateNewItem({ type: 'link', url: 'http://x.com' }).data);
+  for (const bad of ['javascript:alert(1)', 'data:text/html,<b>x</b>', 'file:///etc/passwd', 'x.com', 'vbscript:x']) {
+    assert.match(validateNewItem({ type: 'link', url: bad }).error, /http/, bad);
+  }
+});
+
+test('uploads must be http(s); a bad favicon is just dropped', () => {
+  assert.ok(validateNewItem({ type: 'photo', imageUrl: 'javascript:x' }).error);
+  const { data } = validateNewItem({ type: 'link', url: 'https://x.com', faviconUrl: 'javascript:x' });
+  assert.equal(data.faviconUrl, null);
+});
+
+test('isWebUrl', () => {
+  assert.equal(isWebUrl('https://a.b/c'), true);
+  assert.equal(isWebUrl('HTTP://A.B'), true);
+  assert.equal(isWebUrl('/relative'), false);
+  assert.equal(isWebUrl(''), false);
+});
