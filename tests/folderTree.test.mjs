@@ -1,0 +1,56 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildFolderTree, flattenWithDepth } from '../lib/folderTree.js';
+
+const folders = [
+  { id: 1, name: 'Work', parent_id: null },
+  { id: 2, name: 'Fun', parent_id: null },
+  { id: 3, name: 'Reddit', parent_id: 2 },
+  { id: 4, name: 'Games', parent_id: 2 },
+  { id: 5, name: 'Retro', parent_id: 4 },
+];
+
+test('buildFolderTree nests children under their parent', () => {
+  const tree = buildFolderTree(folders);
+  const fun = tree.find((f) => f.id === 2);
+  assert.deepEqual(fun.children.map((c) => c.id).sort(), [3, 4]);
+  assert.equal(fun.children.find((c) => c.id === 4).children[0].id, 5);
+});
+
+test('buildFolderTree sorts every level by name', () => {
+  const tree = buildFolderTree(folders);
+  assert.deepEqual(tree.map((f) => f.name), ['Fun', 'Work']);
+  assert.deepEqual(tree[0].children.map((f) => f.name), ['Games', 'Reddit']);
+});
+
+test('buildFolderTree treats folders with a missing parent as top level', () => {
+  const tree = buildFolderTree([
+    { id: 1, name: 'Kept', parent_id: null },
+    { id: 9, name: 'Orphan', parent_id: 999 },
+  ]);
+  assert.deepEqual(tree.map((f) => f.name), ['Kept', 'Orphan']);
+});
+
+test('buildFolderTree does not modify the input objects', () => {
+  const input = [{ id: 1, name: 'A', parent_id: null }];
+  buildFolderTree(input);
+  assert.equal(input[0].children, undefined);
+});
+
+test('flattenWithDepth lists parents before children with the right depth', () => {
+  const flat = flattenWithDepth(folders);
+  assert.deepEqual(
+    flat.map((f) => [f.name, f.depth]),
+    [
+      ['Fun', 0],
+      ['Games', 1],
+      ['Retro', 2],
+      ['Reddit', 1],
+      ['Work', 0],
+    ]
+  );
+});
+
+test('flattenWithDepth handles an empty list', () => {
+  assert.deepEqual(flattenWithDepth([]), []);
+});
