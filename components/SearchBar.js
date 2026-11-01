@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { apiRequest } from '@/lib/apiClient';
 
 // Global search input in the header. Searches titles, notes, URLs, tags,
@@ -52,7 +53,7 @@ export default function SearchBar() {
       {open && visibleResults.length > 0 && (
         <div className="absolute z-30 mt-1 max-h-80 w-full overflow-y-auto rounded border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
           {visibleResults.map((r) => (
-            <a
+            <Link
               key={r.id}
               href={`/folder/${r.folder_id}`}
               onClick={() => setOpen(false)}
@@ -60,7 +61,7 @@ export default function SearchBar() {
             >
               <div className="truncate font-medium">{r.title || r.url || '(untitled note)'}</div>
               <div className="text-xs capitalize text-neutral-400">{r.type}</div>
-            </a>
+            </Link>
           ))}
         </div>
       )}
