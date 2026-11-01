@@ -131,3 +131,19 @@ test('findTopLevelFolderByName returns null for no match or empty names', () => 
   assert.equal(findTopLevelFolderByName(list, ''), null);
   assert.equal(findTopLevelFolderByName(list, null), null);
 });
+
+import { folderPath } from '../lib/folderTree.js';
+
+test('folderPath lists names from the top down', () => {
+  assert.deepEqual(folderPath(folders, 5), ['Fun', 'Games', 'Retro']);
+  assert.deepEqual(folderPath(folders, 1), ['Work']);
+  assert.deepEqual(folderPath(folders, 999), []);
+});
+
+test('folderPath survives a loop in bad data', () => {
+  const loop = [
+    { id: 1, name: 'A', parent_id: 2 },
+    { id: 2, name: 'B', parent_id: 1 },
+  ];
+  assert.deepEqual(folderPath(loop, 1), ['B', 'A']);
+});

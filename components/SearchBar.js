@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { apiRequest } from '@/lib/apiClient';
 import { useDismiss } from './useDismiss';
 
+// A small icon for each kind of item in the results list.
+const TYPE_ICONS = { link: '🔗', photo: '🖼️', note: '📝', file: '📎' };
+
 // Global search input in the header. Searches titles, notes, URLs, tags,
-// summaries and descriptions
-// across every folder (see /api/search) and shows results in a dropdown
-// that link straight into their folder.
+// summaries and descriptions across every folder (see /api/search), and
+// shows results in a dropdown — each with its type and folder path — that
+// link straight into their folder.
 export default function SearchBar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -55,8 +58,17 @@ export default function SearchBar() {
               onClick={() => setOpen(false)}
               className="block border-b border-neutral-100 px-3 py-2 text-sm last:border-0 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700"
             >
-              <div className="truncate font-medium">{r.title || r.url || '(untitled note)'}</div>
-              <div className="text-xs capitalize text-neutral-400">{r.type}</div>
+              <div className="flex items-center gap-2">
+                <span aria-label={r.type} title={r.type} className="shrink-0">
+                  {TYPE_ICONS[r.type] || '•'}
+                </span>
+                <span className="truncate font-medium">
+                  {r.title || r.url || (r.content ? r.content.slice(0, 60) : '(untitled note)')}
+                </span>
+              </div>
+              <div className="truncate pl-6 text-xs text-neutral-500 dark:text-neutral-400">
+                in 📁 {r.folder_path?.length ? r.folder_path.join(' / ') : r.folder_name || 'a folder'}
+              </div>
             </Link>
           ))}
         </div>
