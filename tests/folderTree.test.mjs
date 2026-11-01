@@ -82,3 +82,25 @@ test('flattenWithDepth keeps each folder icon', () => {
   const flat = flattenWithDepth([{ id: 1, name: 'A', parent_id: null, icon: '⭐' }]);
   assert.equal(flat[0].icon, '⭐');
 });
+
+import { canDropOnFolder } from '../lib/folderTree.js';
+
+test('canDropOnFolder: items can go to any other folder, never top level', () => {
+  const item = { kind: 'item', id: 10, folderId: 3 };
+  assert.equal(canDropOnFolder(item, 1, folders), true);
+  assert.equal(canDropOnFolder(item, 3, folders), false); // already there
+  assert.equal(canDropOnFolder(item, null, folders), false);
+});
+
+test('canDropOnFolder: folders follow the move rules', () => {
+  const games = { kind: 'folder', id: 4, parentId: 2 };
+  assert.equal(canDropOnFolder(games, 1, folders), true);
+  assert.equal(canDropOnFolder(games, null, folders), true);
+  assert.equal(canDropOnFolder(games, 2, folders), false); // already there
+  assert.equal(canDropOnFolder(games, 4, folders), false); // onto itself
+  assert.equal(canDropOnFolder(games, 5, folders), false); // into its own subfolder
+});
+
+test('canDropOnFolder: nothing being dragged means no drop', () => {
+  assert.equal(canDropOnFolder(null, 1, folders), false);
+});

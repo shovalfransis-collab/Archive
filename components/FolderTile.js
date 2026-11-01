@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import MoveFolderModal from './MoveFolderModal';
+import { dragSourceProps, useFolderDropTarget, DROP_HIGHLIGHT } from './dragAndDrop';
 
 // A small palette of common folder emoji, plus the input below lets you
 // type/paste any other emoji.
@@ -19,6 +21,9 @@ export default function FolderTile({ folder, allFolders = [] }) {
   const [name, setName] = useState(folder.name);
   const [customIcon, setCustomIcon] = useState('');
   const router = useRouter();
+  // Drag this folder onto another one to move it there; drop items or other
+  // folders onto this one to move them in.
+  const { isOver, dropProps } = useFolderDropTarget(folder.id, allFolders);
 
   async function handleRename(e) {
     e.preventDefault();
@@ -129,14 +134,19 @@ export default function FolderTile({ folder, allFolders = [] }) {
   }
 
   return (
-    <div className="group relative">
-      <a
+    <div
+      className="group relative"
+      {...dragSourceProps({ kind: 'folder', id: folder.id, parentId: folder.parent_id ?? null })}
+      {...dropProps}
+    >
+      <Link
         href={`/folder/${folder.id}`}
-        className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200 p-3 text-center hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+        draggable={false}
+        className={`flex flex-col items-center gap-1 rounded-lg border border-neutral-200 p-3 text-center hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800 ${isOver ? DROP_HIGHLIGHT : ''}`}
       >
         <span className="text-4xl">{folder.icon || '📁'}</span>
         <span className="w-full break-words text-sm">{folder.name}</span>
-      </a>
+      </Link>
       <button
         onClick={() => setMenuOpen((v) => !v)}
         className="absolute right-1 top-1 px-1 text-neutral-500 opacity-0 group-hover:opacity-100"

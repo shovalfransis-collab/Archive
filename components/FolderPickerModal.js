@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { flattenWithDepth } from '@/lib/folderTree';
 
 // A folder picker shown as a modal, shared by "move item" and "move folder".
@@ -40,7 +41,10 @@ export default function FolderPickerModal({
   const rowClass =
     'block w-full rounded px-2 py-1 text-left text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-neutral-700';
 
-  return (
+  // Rendered at the end of <body> (a portal) rather than inside the card
+  // that opened it: cards are draggable, and selecting text in here
+  // shouldn't start dragging the card underneath.
+  return createPortal(
     <div
       className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
@@ -78,6 +82,7 @@ export default function FolderPickerModal({
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

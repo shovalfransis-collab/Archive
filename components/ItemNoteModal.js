@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 
 // Lets you add or edit the free-text annotation attached to a link or photo
@@ -22,7 +23,10 @@ export default function ItemNoteModal({ item, onClose }) {
     router.refresh();
   }
 
-  return (
+  // Rendered at the end of <body> (a portal) rather than inside the card
+  // that opened it: cards are draggable, and selecting text in here
+  // shouldn't start dragging the card underneath.
+  return createPortal(
     <div
       className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
@@ -53,6 +57,7 @@ export default function ItemNoteModal({ item, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

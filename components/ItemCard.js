@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import MoveToFolderModal from './MoveToFolderModal';
 import NoteViewModal from './NoteViewModal';
 import ItemNoteModal from './ItemNoteModal';
+import { dragSourceProps } from './dragAndDrop';
 
 // Shown under any item type when the AI auto-sort agent (lib/ai.js) tagged
 // it with a summary and/or tags. Absent for manually-filed items.
@@ -22,6 +23,7 @@ function AiMetadata({ item }) {
             <Link
               key={tag}
               href={`/tag/${encodeURIComponent(tag)}`}
+              draggable={false}
               className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
             >
               #{tag}
@@ -53,7 +55,10 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
   }
 
   return (
-    <div className="group relative rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+    <div
+      {...dragSourceProps({ kind: 'item', id: item.id, folderId: item.folder_id })}
+      className="group relative cursor-grab rounded-lg border border-neutral-200 bg-white active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800"
+    >
       <button
         onClick={() => setMenuOpen((v) => !v)}
         className="absolute right-1 top-1 z-10 rounded bg-white/80 px-1 text-neutral-500 opacity-0 group-hover:opacity-100 dark:bg-neutral-800/80 dark:text-neutral-400"
@@ -96,7 +101,7 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
         <>
           <div className="overflow-hidden rounded-t-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.image_url} alt={item.title || ''} className="h-32 w-full object-cover" />
+            <img src={item.image_url} alt={item.title || ''} draggable={false} className="h-32 w-full object-cover" />
           </div>
           {item.title && (
             <p className="truncate px-2 py-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -113,11 +118,11 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
       )}
 
       {item.type === 'link' && (
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="block p-3">
+        <a href={item.url} target="_blank" rel="noopener noreferrer" draggable={false} className="block p-3">
           <div className="mb-1 flex items-center gap-2">
             {item.favicon_url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.favicon_url} alt="" className="h-4 w-4" />
+              <img src={item.favicon_url} alt="" draggable={false} className="h-4 w-4" />
             )}
             <span className="truncate text-sm font-medium">{item.title || item.url}</span>
           </div>
@@ -143,7 +148,7 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
       {item.type === 'note' && <AiMetadata item={item} />}
 
       {item.type === 'file' && (
-        <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="block p-3">
+        <a href={item.image_url} target="_blank" rel="noopener noreferrer" draggable={false} className="block p-3">
           <div className="flex items-center gap-2">
             <span className="text-xl leading-none">📎</span>
             <span className="truncate text-sm font-medium">{item.title || 'File'}</span>
@@ -160,6 +165,7 @@ export default function ItemCard({ item, allFolders, showFolder = false }) {
       {showFolder && item.folder_id && (
         <Link
           href={`/folder/${item.folder_id}`}
+          draggable={false}
           className="block truncate border-t border-neutral-100 px-3 py-1.5 text-[11px] text-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:text-neutral-200"
         >
           in 📁 {item.folder_name || 'a folder'}
