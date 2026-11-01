@@ -1,20 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import SearchBar from './SearchBar';
 import QuickAddModal from './QuickAddModal';
 import ThemeToggle from './ThemeToggle';
+import HeaderMenu from './HeaderMenu';
 
-// Wraps every page with the header bar (logo, search, quick-add, logout) —
-// except the login page, which should be a blank slate. This has to be a
-// Client Component (not the root layout itself) because it needs
-// usePathname() to know which page it's on.
+// Wraps every page with the header bar (logo, search, quick-add, menu) —
+// except the login and share-save pages, which should be a blank slate.
+// This has to be a Client Component (not the root layout itself) because
+// it needs usePathname() to know which page it's on.
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const router = useRouter();
 
-  if (pathname === '/login') {
+  // These pages are full-screen on their own: the PIN screen, and the
+  // save-from-share screens (which often open in a small popup).
+  if (pathname === '/login' || pathname === '/add' || pathname === '/share') {
     return children;
   }
 
@@ -22,12 +24,6 @@ export default function AppShell({ children }) {
   // *that* folder rather than asking you to pick one every time.
   const folderMatch = pathname.match(/^\/folder\/(\d+)/);
   const currentFolderId = folderMatch ? Number(folderMatch[1]) : null;
-
-  async function handleLogout() {
-    await fetch('/api/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
-  }
 
   return (
     <div>
@@ -40,12 +36,7 @@ export default function AppShell({ children }) {
         </div>
         <QuickAddModal currentFolderId={currentFolderId} />
         <ThemeToggle />
-        <button
-          onClick={handleLogout}
-          className="shrink-0 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-        >
-          Log out
-        </button>
+        <HeaderMenu />
       </header>
       <main className="p-4">{children}</main>
     </div>

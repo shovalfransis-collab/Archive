@@ -40,3 +40,21 @@ test('changing the PIN logs out old sessions', async () => {
   process.env.ARCHIVE_PIN = '9999';
   assert.equal(await isValidSessionToken(token), false);
 });
+
+import { makeShareKey, isValidShareKey } from '../lib/auth.js';
+
+test('the share key is stable and checks out', async () => {
+  const key = await makeShareKey();
+  assert.equal(key.length, 32);
+  assert.equal(key, await makeShareKey());
+  assert.equal(await isValidShareKey(key), true);
+});
+
+test('wrong, missing, or old share keys are rejected', async () => {
+  const key = await makeShareKey();
+  assert.equal(await isValidShareKey(undefined), false);
+  assert.equal(await isValidShareKey(''), false);
+  assert.equal(await isValidShareKey('x'.repeat(32)), false);
+  process.env.ARCHIVE_PIN = '0000';
+  assert.equal(await isValidShareKey(key), false);
+});

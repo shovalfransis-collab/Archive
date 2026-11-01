@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { flattenWithDepth } from '@/lib/folderTree';
+import { saveItem as postItem, saveLink } from '@/lib/saveItem';
 
 const TYPES = [
   { key: 'link', label: '🔗 Add link' },
@@ -78,18 +79,16 @@ export default function QuickAddModal({ currentFolderId }) {
     setAnnotation('');
   }
 
-  // Posts to /api/items and, if the server auto-sorted it (no folderId was
-  // sent), surfaces a short toast naming where it landed.
-  async function saveItem(body) {
-    const res = await fetch('/api/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const saved = await res.json();
+  // Saves via lib/saveItem.js and, if the server auto-sorted it (no
+  // folderId was sent), surfaces a short toast naming where it landed.
+  function showToastIfSorted(saved) {
     if (saved.autoSorted) {
       setToast({ folderName: saved.folderName, folderIsNew: saved.folderIsNew });
     }
+  }
+
+  async function saveItem(body) {
+    showToastIfSorted(await postItem(body));
   }
 
   async function handleSubmit(e) {
@@ -100,27 +99,14 @@ export default function QuickAddModal({ currentFolderId }) {
     setSaving(true);
     try {
       if (type === 'link') {
-        // Best-effort metadata fetch — if it fails, we still save the URL.
-        let preview = {};
-        try {
-          const res = await fetch('/api/link-preview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          });
-          preview = await res.json();
-        } catch {
-          // ignore — fall back to the bare URL below
-        }
-        await saveItem({
-          folderId: isAutoSort ? null : Number(folderId),
-          type: 'link',
-          url,
-          title: preview.title || url,
-          description: preview.description,
-          faviconUrl: preview.faviconUrl,
-          note: annotation || null,
-        });
+        // The preview fetch is best-effort — if it fails, the bare URL is saved.
+        showToastIfSorted(
+          await saveLink({
+            url,
+            folderId: isAutoSort ? null : Number(folderId),
+            note: annotation || null,
+          })
+        );
       } else if (type === 'note') {
         await saveItem({
           folderId: Number(folderId),

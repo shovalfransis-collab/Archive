@@ -232,6 +232,20 @@ Vercel gives you a URL like `the-archive-yourname.vercel.app` — open it on
 your iPhone, Mac, or PC, enter your PIN, and start saving things. Any
 future change you push to GitHub (`git push`) redeploys automatically.
 
+### Saving from your phone or browser
+
+Open the **☰** menu → **Save from anywhere…** for one-time setup of:
+
+- a **bookmarklet** for computers (one click saves the page you're on),
+- the **share menu on Android** (install the app from Chrome first),
+- an **Apple Shortcut** for iPhone/iPad (iPhones don't let web apps appear
+  in the share menu, so a Shortcut does the job instead).
+
+All three open `/add?url=…`, which saves the link and lets the AI file it.
+If you're logged out, you'll be asked for your PIN and then sent right back.
+Links built on that page contain a private key; if you change your PIN,
+redo the setup (old links will still work, but ask "Save this?" first).
+
 ---
 
 ## 4. Accounts you'll need, summarized

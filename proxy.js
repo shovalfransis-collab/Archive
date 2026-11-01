@@ -9,12 +9,23 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 
-export async function proxy(request) {
-  const { pathname } = request.nextUrl;
+// Reachable without logging in. The login page and its API, obviously —
+// otherwise there'd be no way to ever log in. The app manifest and icons
+// too: browsers fetch those without your login cookie when installing the
+// app to a home screen, and they contain nothing private.
+function isPublicPath(pathname) {
+  return (
+    pathname === '/login' ||
+    pathname === '/api/login' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname.startsWith('/icons/')
+  );
+}
 
-  // The login page itself, and the API route it submits to, must stay
-  // reachable — otherwise there'd be no way to ever log in.
-  if (pathname === '/login' || pathname === '/api/login') {
+export async function proxy(request) {
+  const { pathname, search } = request.nextUrl;
+
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -22,7 +33,15 @@ export async function proxy(request) {
   const valid = await isValidSessionToken(token);
 
   if (!valid) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    // Remember which page you were heading to (e.g. a link shared from your
+    // phone, at /add?url=…) so logging in takes you straight back there.
+    // The login page checks this is a path on this site before using it
+    // (lib/safeRedirect.js). API calls don't need it — they're not pages.
+    if (pathname !== '/' && !pathname.startsWith('/api/')) {
+      loginUrl.searchParams.set('next', pathname + search);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
