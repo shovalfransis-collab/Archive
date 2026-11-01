@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkPin, makeSessionToken, COOKIE_NAME } from '@/lib/auth';
+import { checkPin, makeSessionToken, COOKIE_NAME, SESSION_DAYS } from '@/lib/auth';
 import { getLoginLock, recordLoginFailure, clearLoginFailures } from '@/lib/db';
 import { jsonError, readJson, withErrors } from '@/lib/api';
 import {
@@ -39,7 +39,7 @@ export const POST = withErrors(async (request) => {
     httpOnly: true, // JavaScript in the browser can't read this cookie
     secure: true, // only sent over HTTPS
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365, // stay logged in for a year — this is a personal app
+    maxAge: 60 * 60 * 24 * SESSION_DAYS, // the token inside also expires then (lib/auth.js)
     path: '/',
   });
 

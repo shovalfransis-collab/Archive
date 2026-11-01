@@ -189,6 +189,8 @@ keeps your data safely between deploys.
    - `AUTH_SECRET` — any long random text (e.g. mash your keyboard for 30
      characters). This is used to cryptographically sign your login
      session so no one can fake being logged in without knowing your PIN.
+     A login lasts 90 days on each device. **Changing `AUTH_SECRET` (or the
+     PIN) logs out every device at once** — handy if you lose a phone.
 3. Click **Save** for each.
 
 ### Step 6.5 — Set up the AI auto-sort agent (optional)

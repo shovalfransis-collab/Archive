@@ -1,6 +1,12 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkPin, safeEqual, makeSessionToken, isValidSessionToken } from '../lib/auth.js';
+import {
+  checkPin,
+  safeEqual,
+  makeSessionToken,
+  isValidSessionToken,
+  SESSION_DAYS,
+} from '../lib/auth.js';
 
 beforeEach(() => {
   process.env.AUTH_SECRET = 'test-secret-that-is-long-enough';
@@ -31,17 +37,43 @@ test('a freshly made session token is valid', async () => {
 
 test('a tampered token is rejected', async () => {
   const token = await makeSessionToken();
-  const [value, signature] = token.split('.');
+  const [v, issued, expires, signature] = token.split('.');
   const flipped = (signature[0] === 'a' ? 'b' : 'a') + signature.slice(1);
-  assert.equal(await isValidSessionToken(`${value}.${flipped}`), false);
-  assert.equal(await isValidSessionToken(`other.${signature}`), false);
+  assert.equal(await isValidSessionToken(`${v}.${issued}.${expires}.${flipped}`), false);
+  // Pushing the expiry later breaks the signature.
+  assert.equal(await isValidSessionToken(`${v}.${issued}.${Number(expires) + 1e9}.${signature}`), false);
 });
 
-test('empty or malformed tokens are rejected', async () => {
+test('empty, malformed and old-style tokens are rejected', async () => {
   assert.equal(await isValidSessionToken(undefined), false);
   assert.equal(await isValidSessionToken(''), false);
   assert.equal(await isValidSessionToken('no-dot-here'), false);
-  assert.equal(await isValidSessionToken('.'), false);
+  assert.equal(await isValidSessionToken('...'), false);
+  assert.equal(await isValidSessionToken('v1.a.b.c'), false);
+  // The format used before expiry was added: "ok.<signature>".
+  assert.equal(await isValidSessionToken('ok.' + 'a'.repeat(64)), false);
+});
+
+test('tokens expire after SESSION_DAYS', async () => {
+  const day = 24 * 60 * 60 * 1000;
+  const now = Date.UTC(2026, 0, 1);
+  const token = await makeSessionToken({ now });
+  assert.equal(await isValidSessionToken(token, { now: now + (SESSION_DAYS - 1) * day }), true);
+  assert.equal(await isValidSessionToken(token, { now: now + SESSION_DAYS * day }), false);
+});
+
+test('tokens from the future or lasting too long are rejected', async () => {
+  const now = Date.UTC(2026, 0, 1);
+  const future = await makeSessionToken({ now: now + 10 * 60 * 1000 });
+  assert.equal(await isValidSessionToken(future, { now }), false);
+  const tooLong = await makeSessionToken({ now, days: SESSION_DAYS + 30 });
+  assert.equal(await isValidSessionToken(tooLong, { now }), false);
+});
+
+test('changing AUTH_SECRET logs out every session', async () => {
+  const token = await makeSessionToken();
+  process.env.AUTH_SECRET = 'a-completely-different-secret-value';
+  assert.equal(await isValidSessionToken(token), false);
 });
 
 test('changing the PIN logs out old sessions', async () => {
