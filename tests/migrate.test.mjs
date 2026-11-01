@@ -70,3 +70,11 @@ test('rolls back and stops when a migration fails', async () => {
   assert.ok(client.calls.includes('ROLLBACK'));
   assert.ok(!client.calls.includes('SQL B'));
 });
+
+test('a migration allows the "file" item type (Add a file needs it)', () => {
+  const dir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'migrations');
+  const allSql = listMigrationFiles(dir)
+    .map((f) => fs.readFileSync(path.join(dir, f), 'utf8'))
+    .join('\n');
+  assert.match(allSql, /CHECK \(type IN \([^)]*'file'[^)]*\)\)/);
+});
