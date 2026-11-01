@@ -104,3 +104,30 @@ test('canDropOnFolder: folders follow the move rules', () => {
 test('canDropOnFolder: nothing being dragged means no drop', () => {
   assert.equal(canDropOnFolder(null, 1, folders), false);
 });
+
+import { findTopLevelFolderByName } from '../lib/folderTree.js';
+
+test('findTopLevelFolderByName ignores case and extra spaces', () => {
+  const list = [
+    { id: 1, name: 'Recipes', parent_id: null },
+    { id: 2, name: 'Travel  Plans', parent_id: null },
+  ];
+  assert.equal(findTopLevelFolderByName(list, 'recipes').id, 1);
+  assert.equal(findTopLevelFolderByName(list, '  RECIPES ').id, 1);
+  assert.equal(findTopLevelFolderByName(list, 'travel plans').id, 2);
+});
+
+test('findTopLevelFolderByName only matches top-level folders', () => {
+  const list = [
+    { id: 1, name: 'Fun', parent_id: null },
+    { id: 2, name: 'Recipes', parent_id: 1 }, // nested — not a match
+  ];
+  assert.equal(findTopLevelFolderByName(list, 'Recipes'), null);
+});
+
+test('findTopLevelFolderByName returns null for no match or empty names', () => {
+  const list = [{ id: 1, name: 'Recipes', parent_id: null }];
+  assert.equal(findTopLevelFolderByName(list, 'Recipe'), null);
+  assert.equal(findTopLevelFolderByName(list, ''), null);
+  assert.equal(findTopLevelFolderByName(list, null), null);
+});

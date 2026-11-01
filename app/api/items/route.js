@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createItem, getItems, getAllFolders, createFolder, getFolder } from '@/lib/db';
 import { jsonError, readJson, withErrors } from '@/lib/api';
 import { toId, validateNewItem } from '@/lib/validate';
+import { findTopLevelFolderByName } from '@/lib/folderTree';
 import { classifyItem } from '@/lib/ai';
 
 export const GET = withErrors(async (request) => {
@@ -33,16 +34,18 @@ export const POST = withErrors(async (request) => {
       folderId = classification.folderId;
       folderName = folders.find((f) => f.id === folderId)?.name ?? null;
     } else if (classification?.newFolderName) {
-      const newFolder = await createFolder(classification.newFolderName, null, null);
-      folderId = newFolder.id;
-      folderName = newFolder.name;
-      folderIsNew = true;
+      // The AI sometimes "invents" a folder you already have (e.g.
+      // "Recipes" when there's a "recipes"), so reuse a matching top-level
+      // folder instead of creating a duplicate.
+      const existing = findTopLevelFolderByName(folders, classification.newFolderName);
+      const folder = existing || (await createFolder(classification.newFolderName, null, null));
+      folderId = folder.id;
+      folderName = folder.name;
+      folderIsNew = !existing;
     } else {
       // AI is unavailable/failed — fall back to an "Unsorted" catch-all
       // folder rather than silently dropping the item.
-      const existingUnsorted = folders.find(
-        (f) => !f.parent_id && f.name.toLowerCase() === 'unsorted'
-      );
+      const existingUnsorted = findTopLevelFolderByName(folders, 'Unsorted');
       const unsorted = existingUnsorted || (await createFolder('Unsorted', null, null));
       folderId = unsorted.id;
       folderName = unsorted.name;
