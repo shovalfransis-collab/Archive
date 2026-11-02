@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { flattenWithDepth } from '@/lib/folderTree';
+import { saveItem as postItem, saveLink } from '@/lib/saveItem';
+import { upload } from '@vercel/blob/client';
+import { checkUpload, uploadPathname } from '@/lib/uploadRules';
+import { apiRequest } from '@/lib/apiClient';
+import { showToast, showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 const TYPES = [
   { key: 'link', label: '🔗 Add link' },
@@ -28,9 +34,6 @@ export default function QuickAddModal({ currentFolderId }) {
   const [folders, setFolders] = useState([]);
   const [folderId, setFolderId] = useState('');
   const [saving, setSaving] = useState(false);
-  // Brief "Filed in X" notification shown after an auto-sorted save.
-  // { folderName, folderIsNew } while visible, otherwise null.
-  const [toast, setToast] = useState(null);
 
   const [url, setUrl] = useState('');
   const [noteText, setNoteText] = useState('');
@@ -41,30 +44,32 @@ export default function QuickAddModal({ currentFolderId }) {
 
   const router = useRouter();
 
+  // Esc = Cancel while the modal is open — unless you've typed something
+  // (then use Cancel), so a stray key press doesn't lose it.
+  const hasInput = Boolean(url || noteText || file || annotation);
+  useEscape(open && !saving && !hasInput, closeAndReset);
+
+  // Load the folder list each time the modal opens (it may have changed
+  // since last time).
   useEffect(() => {
-    if (open) {
-      fetch('/api/folders')
-        .then((res) => res.json())
-        .then(setFolders);
-      // Inside a folder already: default to it. Otherwise default to
-      // auto-sort for links/photos, and to "choose one" for notes (set
-      // once `type` is picked, below).
-      setFolderId(currentFolderId ?? '');
+    if (!open) return;
+    apiRequest('/api/folders')
+      .then(setFolders)
+      .catch((err) => showError(`Couldn’t load your folders: ${err.message}`));
+  }, [open]);
+
+  // Picking a type also picks a sensible default folder. Inside a folder
+  // already: default to it. Otherwise default to auto-sort for
+  // links/photos/files, and to "choose one" for notes. Done here in the
+  // click handler (not in an effect) so it happens in the same render.
+  function chooseType(nextType) {
+    setType(nextType);
+    if (currentFolderId) {
+      setFolderId(String(currentFolderId));
+    } else {
+      setFolderId(nextType === 'note' ? '' : AUTO_SORT);
     }
-  }, [open, currentFolderId]);
-
-  // Once you pick a type, set a sensible default for the folder field if
-  // one hasn't already been set from currentFolderId above.
-  useEffect(() => {
-    if (!type || currentFolderId) return;
-    setFolderId(type === 'note' ? '' : AUTO_SORT);
-  }, [type, currentFolderId]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  }
 
   function closeAndReset() {
     setOpen(false);
@@ -75,18 +80,16 @@ export default function QuickAddModal({ currentFolderId }) {
     setAnnotation('');
   }
 
-  // Posts to /api/items and, if the server auto-sorted it (no folderId was
-  // sent), surfaces a short toast naming where it landed.
-  async function saveItem(body) {
-    const res = await fetch('/api/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const saved = await res.json();
+  // Saves via lib/saveItem.js and, if the server auto-sorted it (no
+  // folderId was sent), surfaces a short toast naming where it landed.
+  function showToastIfSorted(saved) {
     if (saved.autoSorted) {
-      setToast({ folderName: saved.folderName, folderIsNew: saved.folderIsNew });
+      showToast(`✨ Filed in ${saved.folderName}${saved.folderIsNew ? ' (new folder)' : ''}`);
     }
+  }
+
+  async function saveItem(body) {
+    showToastIfSorted(await postItem(body));
   }
 
   async function handleSubmit(e) {
@@ -97,27 +100,14 @@ export default function QuickAddModal({ currentFolderId }) {
     setSaving(true);
     try {
       if (type === 'link') {
-        // Best-effort metadata fetch — if it fails, we still save the URL.
-        let preview = {};
-        try {
-          const res = await fetch('/api/link-preview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          });
-          preview = await res.json();
-        } catch {
-          // ignore — fall back to the bare URL below
-        }
-        await saveItem({
-          folderId: isAutoSort ? null : Number(folderId),
-          type: 'link',
-          url,
-          title: preview.title || url,
-          description: preview.description,
-          faviconUrl: preview.faviconUrl,
-          note: annotation || null,
-        });
+        // The preview fetch is best-effort — if it fails, the bare URL is saved.
+        showToastIfSorted(
+          await saveLink({
+            url,
+            folderId: isAutoSort ? null : Number(folderId),
+            note: annotation || null,
+          })
+        );
       } else if (type === 'note') {
         await saveItem({
           folderId: Number(folderId),
@@ -126,7 +116,7 @@ export default function QuickAddModal({ currentFolderId }) {
           title: noteText.slice(0, 40),
         });
       } else if (type === 'photo' && file) {
-        const { url: imageUrl } = await uploadFile(file);
+        const { url: imageUrl } = await uploadFile(file, 'photo');
         await saveItem({
           folderId: isAutoSort ? null : Number(folderId),
           type: 'photo',
@@ -137,7 +127,7 @@ export default function QuickAddModal({ currentFolderId }) {
       } else if (type === 'file' && file) {
         // Files reuse the same generic imageUrl column as photos — it's just
         // a URL to whatever got uploaded, not an image-specific field.
-        const { url: fileUrl } = await uploadFile(file);
+        const { url: fileUrl } = await uploadFile(file, 'file');
         await saveItem({
           folderId: isAutoSort ? null : Number(folderId),
           type: 'file',
@@ -149,23 +139,30 @@ export default function QuickAddModal({ currentFolderId }) {
       closeAndReset();
       router.refresh();
     } catch (err) {
-      alert(`Couldn't save that: ${err.message}`);
+      // The modal stays open with what you typed, so you can try again.
+      showError(`Couldn’t save that: ${err.message}`);
     } finally {
       setSaving(false);
     }
   }
 
-  // Uploads to /api/upload and throws a readable error instead of crashing
-  // on `.json()` if the server errored (e.g. missing Blob credentials).
-  async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) {
-      throw new Error(body?.error || `Upload failed (${res.status})`);
+  // Uploads straight from the browser to Vercel Blob storage (no size limit
+  // from our server in between); /api/upload only hands out permission.
+  // Throws a readable error if anything goes wrong.
+  async function uploadFile(file, kind) {
+    const problem = checkUpload(file, kind);
+    if (problem) throw new Error(problem);
+    try {
+      const blob = await upload(uploadPathname(file.name), file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+        clientPayload: kind, // tells the server which rules apply
+        multipart: file.size > 8 * 1024 * 1024, // big files go up in chunks
+      });
+      return { url: blob.url };
+    } catch (err) {
+      throw new Error(`Upload failed — ${err.message || 'please try again.'}`);
     }
-    return body;
   }
 
   const flatFolders = flattenWithDepth(folders);
@@ -175,7 +172,7 @@ export default function QuickAddModal({ currentFolderId }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xl leading-none text-white"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xl leading-none text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
         aria-label="Add"
       >
         +
@@ -196,7 +193,7 @@ export default function QuickAddModal({ currentFolderId }) {
                 {TYPES.map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setType(t.key)}
+                    onClick={() => chooseType(t.key)}
                     className="block w-full rounded border border-neutral-200 px-3 py-2 text-left hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700"
                   >
                     {t.label}
@@ -300,14 +297,6 @@ export default function QuickAddModal({ currentFolderId }) {
               </form>
             )}
           </div>
-        </div>,
-        document.body
-      )}
-
-      {toast && createPortal(
-        <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full bg-neutral-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-neutral-100 dark:text-neutral-900">
-          ✨ Filed in <strong>{toast.folderName}</strong>
-          {toast.folderIsNew ? ' (new folder)' : ''}
         </div>,
         document.body
       )}

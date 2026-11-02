@@ -1,31 +1,63 @@
-import { NextResponse } from 'next/server';
-import { renameFolder, moveFolder, updateFolderIcon, deleteFolder } from '@/lib/db';
+import { NextResponse, after } from 'next/server';
+import {
+  renameFolder,
+  moveFolder,
+  updateFolderIcon,
+  deleteFolder,
+  getAllFolders,
+  getUploadUrlsInFolderTree,
+} from '@/lib/db';
+import { deleteUploadedFiles } from '@/lib/blobCleanup';
+import { canMoveFolder } from '@/lib/folderTree';
+import { jsonError, readJson, withErrors } from '@/lib/api';
+import { toId, validateFolderPatch } from '@/lib/validate';
 
 // Handles renaming (body: { name }), moving (body: { parentId }), and
 // changing the icon (body: { icon }) — whichever fields are present in the
-// request body.
-export async function PATCH(request, { params }) {
+// request body. Everything is checked before anything is changed, so a bad
+// request never leaves a half-applied update (e.g. renamed but not moved).
+export const PATCH = withErrors(async (request, { params }) => {
   const { id: idParam } = await params; // route params are a Promise in current Next.js
-  const id = Number(idParam);
-  const body = await request.json();
-  let folder;
+  const id = toId(idParam);
+  if (!id) return jsonError('Folder not found', 404);
 
-  if (body.name !== undefined) {
-    folder = await renameFolder(id, body.name.trim());
+  const { data, error } = validateFolderPatch(await readJson(request));
+  if (error) return jsonError(error);
+
+  const folders = await getAllFolders();
+  if (!folders.some((f) => f.id === id)) return jsonError('Folder not found', 404);
+
+  if (data.parentId !== undefined) {
+    if (data.parentId !== null && !folders.some((f) => f.id === data.parentId)) {
+      return jsonError('The folder you picked no longer exists.', 404);
+    }
+    // Checked on the server too (not just hidden in the picker), since a
+    // loop would make the folder and everything in it vanish from the tree.
+    if (!canMoveFolder(folders, id, data.parentId)) {
+      return jsonError("A folder can't be moved inside itself or one of its own subfolders.");
+    }
   }
-  if (body.parentId !== undefined) {
-    folder = await moveFolder(id, body.parentId);
-  }
-  if (body.icon !== undefined) {
-    folder = await updateFolderIcon(id, body.icon);
-  }
+
+  let folder;
+  if (data.parentId !== undefined) folder = await moveFolder(id, data.parentId);
+  if (data.name !== undefined) folder = await renameFolder(id, data.name);
+  if (data.icon !== undefined) folder = await updateFolderIcon(id, data.icon);
 
   return NextResponse.json(folder);
-}
+});
 
-export async function DELETE(request, { params }) {
+export const DELETE = withErrors(async (request, { params }) => {
   const { id: idParam } = await params;
-  const id = Number(idParam);
-  await deleteFolder(id); // also deletes every subfolder and item inside it
+  const id = toId(idParam);
+  if (!id) return jsonError('Folder not found', 404);
+
+  // Gather the photos/files inside first: deleting the folder also deletes
+  // every subfolder and item inside it (ON DELETE CASCADE), after which
+  // their URLs would be gone.
+  const uploadUrls = await getUploadUrlsInFolderTree(id);
+  if (!(await deleteFolder(id))) return jsonError('Folder not found', 404);
+
+  // Remove them from storage after replying; failures are only logged.
+  if (uploadUrls.length) after(() => deleteUploadedFiles(uploadUrls));
   return NextResponse.json({ ok: true });
-}
+});

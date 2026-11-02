@@ -1,4 +1,4 @@
-import { getFolders } from '@/lib/db';
+import { getFolders, getAllFolders } from '@/lib/db';
 import FolderTile from '@/components/FolderTile';
 import NewFolderButton from '@/components/NewFolderButton';
 
@@ -7,12 +7,11 @@ import NewFolderButton from '@/components/NewFolderButton';
 // the app, so a stale cached version would be actively wrong.
 export const dynamic = 'force-dynamic';
 
-// The "desktop" home view: your top-level folders, shown as tiles. This is
-// a Server Component — it reads straight from the database on the server
-// before the page is sent to the browser, no separate API call needed for
-// the initial load.
+// The "desktop" home view: your top-level folders shown as tiles. This is a
+// Server Component — it reads straight from the database on the server
+// before the page is sent to the browser, no separate API call needed.
 export default async function HomePage() {
-  const folders = await getFolders(null);
+  const [folders, allFolders] = await Promise.all([getFolders(null), getAllFolders()]);
 
   return (
     <div>
@@ -26,7 +25,7 @@ export default async function HomePage() {
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {folders.map((folder) => (
-            <FolderTile key={folder.id} folder={folder} />
+            <FolderTile key={folder.id} folder={folder} allFolders={allFolders} />
           ))}
         </div>
       )}

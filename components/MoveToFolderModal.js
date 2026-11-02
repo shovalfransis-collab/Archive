@@ -1,51 +1,27 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { flattenWithDepth } from '@/lib/folderTree';
+import FolderPickerModal from './FolderPickerModal';
+import { apiRequest } from '@/lib/apiClient';
 
-// A simple folder picker used to move an item. Drag-and-drop was the
-// stretch goal in the spec; this button-based picker covers the same need
-// and works identically on touch and desktop, so it's the v1 approach.
+// Moves an item to another folder. Drag-and-drop does the same thing on
+// desktop; this picker also works on touch screens.
 export default function MoveToFolderModal({ item, allFolders, onClose }) {
   const router = useRouter();
-  const flatFolders = flattenWithDepth(allFolders);
 
   async function handleMove(folderId) {
-    await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folderId }),
-    });
+    // Errors are shown inside the picker (FolderPickerModal).
+    await apiRequest(`/api/items/${item.id}`, { method: 'PATCH', body: { folderId } });
     onClose();
     router.refresh();
   }
 
   return (
-    <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-4 shadow-lg dark:bg-neutral-800"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="mb-2 font-semibold">Move to…</h2>
-        <div className="space-y-1">
-          {flatFolders.length === 0 && (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">No folders yet.</p>
-          )}
-          {flatFolders.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => handleMove(f.id)}
-              className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700"
-              style={{ paddingLeft: `${8 + f.depth * 16}px` }}
-            >
-              {f.icon || '📁'} {f.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <FolderPickerModal
+      allFolders={allFolders}
+      currentId={item.folder_id}
+      onPick={handleMove}
+      onClose={onClose}
+    />
   );
 }

@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { renderMarkdown } from '@/lib/markdown';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 // Opens a note to read it fully rendered as Markdown, with an Edit mode
 // that's a plain textarea plus two toolbar buttons that insert Markdown
@@ -15,6 +19,12 @@ export default function NoteViewModal({ item, onClose }) {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
+  // Esc = Cancel: closes the note, or leaves edit mode. But if you've
+  // typed unsaved changes, Esc does nothing — use Cancel to discard them —
+  // so one stray key press can't throw away your writing.
+  const dirty = editing && content !== (item.content || '');
+  useEscape(!dirty, () => (editing ? setEditing(false) : onClose()));
+
   function wrapSelection(before, after = '') {
     const el = document.getElementById(`note-textarea-${item.id}`);
     if (!el) return;
@@ -25,17 +35,23 @@ export default function NoteViewModal({ item, onClose }) {
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
+    try {
+      await apiRequest(`/api/items/${item.id}`, { method: 'PATCH', body: { content } });
+    } catch (err) {
+      // Keep the editor open so your text isn't lost.
+      showError(`Couldn’t save the note: ${err.message}`);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onClose(); // close the whole modal so the card re-renders with fresh content
     router.refresh();
   }
 
-  return (
+  // Rendered at the end of <body> (a portal) rather than inside the card
+  // that opened it: cards are draggable, and selecting text in here
+  // shouldn't start dragging the card underneath.
+  return createPortal(
     <div
       className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
@@ -108,6 +124,7 @@ export default function NoteViewModal({ item, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

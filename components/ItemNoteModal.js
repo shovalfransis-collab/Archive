@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { apiRequest } from '@/lib/apiClient';
+import { showError } from '@/lib/toast';
+import { useEscape } from './useDismiss';
 
 // Lets you add or edit the free-text annotation attached to a link or photo
 // item — separate from a note item's own body (that's NoteViewModal).
@@ -10,19 +14,28 @@ export default function ItemNoteModal({ item, onClose }) {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
+  // Esc = Cancel, unless you've typed unsaved changes (then use Cancel).
+  useEscape(note === (item.note || ''), onClose);
+
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
-    });
+    try {
+      await apiRequest(`/api/items/${item.id}`, { method: 'PATCH', body: { note } });
+    } catch (err) {
+      // Keep the editor open so your text isn't lost.
+      showError(`Couldn’t save the note: ${err.message}`);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onClose();
     router.refresh();
   }
 
-  return (
+  // Rendered at the end of <body> (a portal) rather than inside the card
+  // that opened it: cards are draggable, and selecting text in here
+  // shouldn't start dragging the card underneath.
+  return createPortal(
     <div
       className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
@@ -53,6 +66,7 @@ export default function ItemNoteModal({ item, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

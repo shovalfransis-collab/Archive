@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/migrate.js",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"tests/**/*.test.mjs\"",
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -19,6 +23,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "dotenv": "^16.4.5",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
     "postcss": "^8.4.47",
     "tailwindcss": "^4.3.3"
   }
